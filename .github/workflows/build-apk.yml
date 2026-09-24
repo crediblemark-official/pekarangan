@@ -3,9 +3,14 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -73,9 +78,38 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: Upload Signed Release APK
+      - name: Upload Signed Release APK (Artifact)
         uses: actions/upload-artifact@v4
         with:
           name: Pekarangan-Release-Signed-APK
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
+
+      - name: Prepare APK for GitHub Release
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Pekarangan-App.apk
+
+      - name: Publish to GitHub Releases
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'Pekarangan App v1.0.0 (Signed Release)' }}
+          body: |
+            ### 📱 Pekarangan Pangan Bergizi - Signed Android APK
+            
+            Aplikasi Android siap pakai yang sudah ditandatangani secara resmi (Signed Release APK).
+            
+            - **Versi**: 1.0.0
+            - **Arsitektur**: Local-First Offline Mode (Blank Spot Ready)
+            - **Integrasi**: Google Sheets Backend + Multi-Device Synchronization
+            
+            #### 📥 Cara Install di HP Android:
+            1. Unduh file **`Pekarangan-App.apk`** di bagian *Assets* di bawah ini.
+            2. Buka file APK di HP Android Anda.
+            3. Jika muncul konfirmasi *"Install unknown apps"*, izinkan untuk melanjutkan instalasi.
+          files: Pekarangan-App.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
