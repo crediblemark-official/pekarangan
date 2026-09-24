@@ -423,24 +423,21 @@ onMounted(() => {
       </div>
     </header>
 
-    <!-- Offline Sync Banner (Shown if there are queued offline items or offline mode) -->
+    <!-- Offline Sync Banner (Super Compact 1-Baris) -->
     <div v-if="syncQueue.length > 0 || !isOnline" :class="['sync-banner', { 'is-offline': !isOnline }]">
-      <div class="sync-banner-text" @click="syncQueue.length > 0 ? showQueueModal = true : null" style="cursor: pointer;">
+      <div class="sync-banner-text" @click="syncQueue.length > 0 ? showQueueModal = true : null" title="Klik untuk lihat antrean">
         <span v-if="!isOnline">
-          📶 Mode Offline (Blank Spot)
-          <strong v-if="syncQueue.length > 0" style="margin-left: 4px;">• {{ syncQueue.length }} data di HP</strong>
+          📶 Offline<span v-if="syncQueue.length > 0"> • <strong>{{ syncQueue.length }} di HP</strong></span>
         </span>
         <span v-else>
-          ✅ Online • <strong>{{ syncQueue.length }} data antrean di HP</strong>
+          🟢 Online • <strong>{{ syncQueue.length }} antrean</strong>
         </span>
       </div>
 
-      <div style="display: flex; gap: 6px; align-items: center;">
+      <div class="sync-banner-actions" v-if="syncQueue.length > 0">
         <button 
-          v-if="syncQueue.length > 0" 
           type="button"
           class="btn-sync" 
-          style="background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4);"
           @click="showQueueModal = true"
           title="Buka daftar antrean"
         >
@@ -448,15 +445,15 @@ onMounted(() => {
         </button>
 
         <button 
-          v-if="syncQueue.length > 0" 
-          class="btn-sync" 
-          :disabled="!isOnline || isSyncing"
+          v-if="isOnline"
+          type="button"
+          class="btn-sync btn-sync-accent" 
+          :disabled="isSyncing"
           @click="syncAllQueue"
-          :title="isOnline ? 'Kirim semua antrean ke Google Sheets' : 'Menunggu koneksi internet pulih'"
+          title="Kirim semua antrean ke Google Sheets"
         >
-          <span v-if="isSyncing" class="spinner"></span>
-          <span v-else-if="!isOnline" style="opacity: 0.85;">⏳ Menunggu Sinyal</span>
-          <span v-else>⚡ Kirim Semua</span>
+          <span v-if="isSyncing" class="spinner" style="width: 10px; height: 10px; border-width: 2px;"></span>
+          <span v-else>⚡ Kirim</span>
         </button>
       </div>
     </div>
