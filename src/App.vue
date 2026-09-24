@@ -423,20 +423,42 @@ onMounted(() => {
       </div>
     </header>
 
-    <!-- Offline Sync Banner (Shown if there are queued offline items) -->
+    <!-- Offline Sync Banner (Shown if there are queued offline items or offline mode) -->
     <div v-if="syncQueue.length > 0 || !isOnline" :class="['sync-banner', { 'is-offline': !isOnline }]">
-      <div class="sync-banner-text">
-        <span>{{ isOnline ? `Ada ${syncQueue.length} data antrean di HP` : 'Mode Offline (Blank Spot HP)' }}</span>
+      <div class="sync-banner-text" @click="syncQueue.length > 0 ? showQueueModal = true : null" style="cursor: pointer;">
+        <span v-if="!isOnline">
+          📶 Mode Offline (Blank Spot)
+          <strong v-if="syncQueue.length > 0" style="margin-left: 4px;">• {{ syncQueue.length }} data di HP</strong>
+        </span>
+        <span v-else>
+          ✅ Online • <strong>{{ syncQueue.length }} data antrean di HP</strong>
+        </span>
       </div>
-      <button 
-        v-if="syncQueue.length > 0 && isOnline" 
-        class="btn-sync" 
-        :disabled="isSyncing"
-        @click="syncAllQueue"
-      >
-        <span v-if="isSyncing" class="spinner"></span>
-        <span v-else>⚡ Kirim Semua</span>
-      </button>
+
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <button 
+          v-if="syncQueue.length > 0" 
+          type="button"
+          class="btn-sync" 
+          style="background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4);"
+          @click="showQueueModal = true"
+          title="Buka daftar antrean"
+        >
+          📥 Lihat ({{ syncQueue.length }})
+        </button>
+
+        <button 
+          v-if="syncQueue.length > 0" 
+          class="btn-sync" 
+          :disabled="!isOnline || isSyncing"
+          @click="syncAllQueue"
+          :title="isOnline ? 'Kirim semua antrean ke Google Sheets' : 'Menunggu koneksi internet pulih'"
+        >
+          <span v-if="isSyncing" class="spinner"></span>
+          <span v-else-if="!isOnline" style="opacity: 0.85;">⏳ Menunggu Sinyal</span>
+          <span v-else>⚡ Kirim Semua</span>
+        </button>
+      </div>
     </div>
 
     <!-- Main Content Views -->
