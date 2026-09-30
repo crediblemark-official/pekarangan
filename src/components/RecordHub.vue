@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import type { PlantItem, LivestockItem, ActivityLogItem } from '../types';
 import { StorageService } from '../services/storage';
 import { ApiService } from '../services/api';
+import { SecurityService } from '../services/security';
 import SearchableSelect, { type SelectOption } from './SearchableSelect.vue';
 
 const emit = defineEmits<{
@@ -19,6 +20,7 @@ const activeTab = ref<'tanaman' | 'ternak' | 'riwayat'>('tanaman');
 // Modals
 const showPlantModal = ref(false);
 const showEggModal = ref(false);
+const showLivestockModal = ref(false);
 const showHarvestModal = ref(false);
 const showUpdatePhaseModal = ref(false);
 const showQuickConsumeModal = ref(false);
@@ -85,6 +87,7 @@ const newPlant = ref({
   variety: '',
   location: locationOptions.value[0]?.value || 'Teras Depan (Polybag)',
   qty: '5 Polybag',
+  plantedDate: new Date().toISOString().slice(0, 10),
   targetHst: 60
 });
 
@@ -93,31 +96,47 @@ const eggLogForm = ref({
   count: 3
 });
 
+const newLivestock = ref({
+  type: 'Ayam Kampung Petelur',
+  name: '',
+  qty: '5 Ekor (4 Betina, 1 Jantan)',
+  housing: 'Kandang Sekat Bambu',
+  note: ''
+});
+
 const harvestForm = ref({
   plantId: '',
   qty: '',
   unit: 'Gram / Ikat',
+  estimatedValue: 20000,
   allocation: 'konsumsi' as 'konsumsi' | 'sedekah' | 'barter'
 });
 
-// Aksi Tambah Tanam Baru
+// Aksi Tambah Tanam Baru (Dengan HST Dinamis)
 const saveNewPlant = () => {
   if (!newPlant.value.name.trim()) {
     emit('showToast', 'Nama tanaman wajib diisi', 'warning');
     return;
   }
+  const dateStr = newPlant.value.plantedDate || new Date().toISOString().slice(0, 10);
+  const plantedTs = new Date(dateStr).getTime();
+  const diffDays = Math.max(1, Math.floor((Date.now() - plantedTs) / 86400000) + 1);
+  const targetHst = Number(newPlant.value.targetHst) || 60;
+  const progress = Math.min(100, Math.round((diffDays / targetHst) * 100));
+
   const item: PlantItem = {
     id: 'p' + Date.now(),
     name: newPlant.value.name.trim(),
     variety: newPlant.value.variety || 'Lokal Unggul',
     location: newPlant.value.location,
     qty: newPlant.value.qty || '1 Polybag',
-    plantedDate: 'Hari ini',
-    hst: 1,
-    targetHst: Number(newPlant.value.targetHst) || 60,
-    phase: '🌱 Baru Ditanam / Semai',
+    plantedDate: dateStr,
+    plantedTimestamp: plantedTs,
+    hst: diffDays,
+    targetHst: targetHst,
+    phase: diffDays > 30 ? '🌿 Masa Vegetatif' : '🌱 Baru Ditanam / Semai',
     icon: '🌱',
-    progressPercent: 5
+    progressPercent: progress
   };
 
   StorageService.addPlant(item);
@@ -133,12 +152,84 @@ const saveNewPlant = () => {
   }
 
   showPlantModal.value = false;
-  emit('showToast', `Berhasil mencatat tanaman baru: ${item.name}!`);
+  emit('showToast', `Berhasil mencatat tanaman: ${item.name} (${diffDays} HST)!`);
   newPlant.value.name = '';
   newPlant.value.variety = '';
 };
 
-// Aksi Log Telur Harian
+// Hapus Tanaman (Dilindungi Kunci Layar / Biometrik)
+const deletePlantItem = async (plant: PlantItem) => {
+  const auth = await SecurityService.authenticate(`Konfirmasi izin hapus tanaman ${plant.name}`);
+  if (!auth.success) {
+    emit('showToast', auth.message || 'Verifikasi biometrik/kunci layar diperlukan', 'warning');
+    return;
+  }
+  if (confirm(`Hapus catatan tanaman "${plant.name}"? Data akan dibersihkan dari daftar aktif.`)) {
+    StorageService.deletePlant(plant.id);
+    activePlants.value = activePlants.value.filter(p => p.id !== plant.id);
+    emit('showToast', `Tanaman "${plant.name}" berhasil dihapus.`);
+  }
+};
+
+// Aksi Tambah Ternak Baru
+const saveNewLivestock = () => {
+  if (!newLivestock.value.name.trim()) {
+    emit('showToast', 'Nama kandang/identitas ternak wajib diisi', 'warning');
+    return;
+  }
+  const icons: Record<string, string> = {
+    'Ayam Kampung Petelur': '🐔',
+    'Bebek Petelur': '🦆',
+    'Burung Puyuh': '🐦',
+    'Ikan Lele / Nila': '🐟',
+    'Kelinci': '🐇'
+  };
+  const icon = icons[newLivestock.value.type] || '🐔';
+  const item: LivestockItem = {
+    id: 'l' + Date.now(),
+    type: newLivestock.value.type,
+    name: newLivestock.value.name.trim(),
+    qty: newLivestock.value.qty || '1 Ekor',
+    housing: newLivestock.value.housing || 'Kandang Pekarangan',
+    todayYield: 0,
+    weekYield: 0,
+    lastYieldDate: new Date().toISOString().slice(0, 10),
+    icon: icon,
+    note: newLivestock.value.note || 'Pakan alami dan sisa dapur'
+  };
+
+  StorageService.addLivestock(item);
+  activeLivestocks.value.unshift(item);
+
+  if (!navigator.onLine) {
+    StorageService.addToSyncQueue(item, 'livestock' as any, `🐔 Ternak: ${item.type} (${item.name})`);
+  } else {
+    ApiService.saveLivestock(settings.gasUrl, item).catch(() => {
+      StorageService.addToSyncQueue(item, 'livestock' as any, `🐔 Ternak: ${item.type} (${item.name})`);
+    });
+  }
+
+  showLivestockModal.value = false;
+  emit('showToast', `Berhasil menambah kelompok ternak: ${item.name}!`);
+  newLivestock.value.name = '';
+  newLivestock.value.note = '';
+};
+
+// Hapus Ternak (Dilindungi Kunci Layar / Biometrik)
+const deleteLivestockItem = async (live: LivestockItem) => {
+  const auth = await SecurityService.authenticate(`Konfirmasi izin hapus ternak ${live.name}`);
+  if (!auth.success) {
+    emit('showToast', auth.message || 'Verifikasi biometrik/kunci layar diperlukan', 'warning');
+    return;
+  }
+  if (confirm(`Hapus catatan kelompok ternak "${live.name}"?`)) {
+    StorageService.deleteLivestock(live.id);
+    activeLivestocks.value = activeLivestocks.value.filter(l => l.id !== live.id);
+    emit('showToast', `Kelompok ternak "${live.name}" dihapus.`);
+  }
+};
+
+// Aksi Log Telur Harian Cepat
 const quickAddEgg = (livestock: LivestockItem) => {
   livestock.todayYield += 1;
   livestock.weekYield += 1;
@@ -165,11 +256,43 @@ const quickAddEgg = (livestock: LivestockItem) => {
   emit('showToast', `+1 Telur dicatat untuk ${livestock.name} (Total: ${livestock.todayYield} butir)`);
 };
 
+// Aksi Simpan dari Modal Telur
+const saveEggLog = () => {
+  const live = activeLivestocks.value.find(l => l.id === eggLogForm.value.livestockId);
+  if (!live) return;
+  const count = Number(eggLogForm.value.count) || 1;
+  live.todayYield += count;
+  live.weekYield += count;
+  StorageService.addEggToLivestock(live.id, count);
+
+  const log: ActivityLogItem = {
+    id: 'a' + Date.now(),
+    title: `Kumpul Telur ${live.type} (+${count} butir)`,
+    type: 'ternak',
+    date: 'Baru saja',
+    note: `Kandang ${live.name} (Total hari ini: ${live.todayYield} butir)`
+  };
+  StorageService.addActivityLog(log);
+  activityLogs.value.unshift(log);
+
+  if (!navigator.onLine) {
+    StorageService.addToSyncQueue({ livestockId: live.id, count, note: log.note }, 'egg_log', `🥚 Telur +${count} (${live.name})`);
+  } else {
+    ApiService.logEgg(settings.gasUrl, live.id, count, log.note).catch(() => {
+      StorageService.addToSyncQueue({ livestockId: live.id, count, note: log.note }, 'egg_log', `🥚 Telur +${count} (${live.name})`);
+    });
+  }
+
+  showEggModal.value = false;
+  emit('showToast', `Berhasil mencatat +${count} telur untuk ${live.name} (Total hari ini: ${live.todayYield})`);
+};
+
 // Aksi Catat Panen
 const openHarvestModal = (plant: PlantItem) => {
   selectedPlant.value = plant;
   harvestForm.value.plantId = plant.id;
   harvestForm.value.qty = '';
+  harvestForm.value.estimatedValue = 20000;
   showHarvestModal.value = true;
 };
 
@@ -179,6 +302,24 @@ const saveHarvest = () => {
     return;
   }
   const plantName = selectedPlant.value?.name || 'Tanaman';
+  const val = Number(harvestForm.value.estimatedValue) || 15000;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  const harvestRecord = {
+    id: 'h' + Date.now(),
+    plantId: harvestForm.value.plantId,
+    plantName: plantName,
+    qty: harvestForm.value.qty,
+    unit: harvestForm.value.unit || 'Satuan',
+    estimatedValue: val,
+    allocation: harvestForm.value.allocation,
+    date: dateStr,
+    note: `Panen ${plantName} (${harvestForm.value.qty})`
+  };
+
+  StorageService.addHarvestRecord(harvestRecord);
+
   const allocationNotes: Record<string, string> = {
     konsumsi: 'Dikonsumsi mandiri (menghemat pengeluaran belanja)',
     sedekah: 'Disedekahkan ke tetangga / warga yang membutuhkan',
@@ -190,7 +331,8 @@ const saveHarvest = () => {
     title: `Panen ${plantName} (${harvestForm.value.qty})`,
     type: 'panen',
     date: 'Baru saja',
-    note: allocationNotes[harvestForm.value.allocation]
+    note: `${allocationNotes[harvestForm.value.allocation]} • Nilai pasar: Rp ${val.toLocaleString()}`,
+    value: val
   };
 
   StorageService.addActivityLog(log);
@@ -201,6 +343,7 @@ const saveHarvest = () => {
     plantName: plantName,
     qty: harvestForm.value.qty,
     allocation: harvestForm.value.allocation,
+    estimatedValue: val,
     note: log.note
   };
 
@@ -214,8 +357,6 @@ const saveHarvest = () => {
   }
 
   if (harvestForm.value.allocation === 'sedekah' && selectedPlant.value) {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     emit('addSedekah', {
       id: 's' + Date.now(),
       title: `${selectedPlant.value.icon || '🌿'} ${harvestForm.value.qty} ${selectedPlant.value.name}`,
@@ -225,7 +366,7 @@ const saveHarvest = () => {
   }
 
   showHarvestModal.value = false;
-  emit('showToast', `Panen ${plantName} (${harvestForm.value.qty}) berhasil dicatat!`);
+  emit('showToast', `Panen ${plantName} (${harvestForm.value.qty}) senilai Rp ${val.toLocaleString()} berhasil dicatat!`);
 };
 
 // Aksi Update Fase Tanam
@@ -266,7 +407,7 @@ const quickConsume = ref({
 
 const saveQuickConsume = () => {
   const saved = quickConsume.value.qty * quickConsume.value.price;
-  const kasItem = {
+  const pengItem = {
     id: 'k' + Date.now(),
     item: `${quickConsume.value.qty} ${quickConsume.value.unit} ${quickConsume.value.commodity}`,
     meal: quickConsume.value.meal,
@@ -274,7 +415,7 @@ const saveQuickConsume = () => {
     date: 'Hari ini',
     savedValue: saved
   };
-  StorageService.addKasLog(kasItem);
+  StorageService.addPengematanLog(pengItem);
 
   const actLog: ActivityLogItem = {
     id: 'a' + Date.now(),
@@ -287,9 +428,9 @@ const saveQuickConsume = () => {
   activityLogs.value.unshift(actLog);
 
   const consumePayload = {
-    item: kasItem.item,
+    item: pengItem.item,
     meal: quickConsume.value.meal,
-    note: kasItem.note,
+    note: pengItem.note,
     savedValue: saved,
     qty: quickConsume.value.qty,
     pricePerUnit: quickConsume.value.price
@@ -297,10 +438,10 @@ const saveQuickConsume = () => {
 
   // Sync to Sheet or offline queue
   if (!navigator.onLine) {
-    StorageService.addToSyncQueue(consumePayload, 'consume', `🍽️ Konsumsi: ${kasItem.item}`);
+    StorageService.addToSyncQueue(consumePayload, 'consume', `🍽️ Konsumsi: ${pengItem.item}`);
   } else {
     ApiService.logConsume(settings.gasUrl, consumePayload).catch(() => {
-      StorageService.addToSyncQueue(consumePayload, 'consume', `🍽️ Konsumsi: ${kasItem.item}`);
+      StorageService.addToSyncQueue(consumePayload, 'consume', `🍽️ Konsumsi: ${pengItem.item}`);
     });
   }
 
@@ -311,171 +452,172 @@ const saveQuickConsume = () => {
 
 <template>
   <div class="record-hub-page">
-    <!-- Header -->
-    <div class="section-header">
-      <h2>📝 Pusat Pencatatan</h2>
-      <p>Jurnal tanam harian, log hasil kandang ternak, dan pendataan profil pekarangan</p>
-    </div>
-
-    <!-- PRIMARY ACTION BANNER: FORM PENDATAAN LAHAN (FASE 1) -->
-    <div class="card" style="background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; margin-bottom: 14px;">
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
-          📋
-        </div>
-        <div style="flex: 1;">
-          <div style="font-weight: 800; font-size: 0.95rem;">
-            Form Pendataan Profil Lahan
+    <!-- PRIMARY ACTION: FORM PENDATAAN LAHAN - Sleek Row -->
+    <div 
+      class="card" 
+      style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f0fdf4; border-bottom: 1px solid var(--primary-border); cursor: pointer;"
+      @click="$emit('openSurvey')"
+    >
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.3rem;">📋</span>
+        <div>
+          <div style="font-weight: 800; font-size: 0.86rem; color: var(--primary-dark);">
+            Profil Lahan Pekarangan
           </div>
-          <p style="font-size: 0.74rem; opacity: 0.9; margin-top: 2px; line-height: 1.35;">
-            Survei 4 langkah resmi: data warga, karakteristik lahan, GPS, foto, dan 4 pilar aset ke Google Sheets.
-          </p>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">
+            Lengkapi data lahan, foto kebun & 4 pilar
+          </div>
         </div>
       </div>
-      <button 
-        type="button" 
-        class="btn btn-full"
-        style="background: #ffffff; color: var(--primary-dark); font-weight: 700; margin-top: 12px; font-size: 0.85rem;"
-        @click="$emit('openSurvey')"
-      >
-        <span>Buka Form Pendataan (Fase 1)</span>
-        <span>➔</span>
-      </button>
+      <span style="color: var(--primary); font-weight: 800; font-size: 0.85rem;">➔</span>
     </div>
 
-    <!-- QUICK ACTION CHIPS (CATAT HARIAN) -->
-    <div class="card" style="padding: 12px; margin-bottom: 14px;">
-      <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-        ⚡ Aksi Cepat Harian
+    <!-- Section Divider Strip -->
+    <div class="section-divider"></div>
+
+    <!-- QUICK ACTION (CATAT HARIAN) - Full Edge Flat -->
+    <div>
+      <div class="section-header-bar">
+        <span class="section-header-title">
+          <span>⚡</span> Aksi Cepat
+        </span>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; background: #ffffff; border-bottom: 1px solid var(--border-subtle);">
         <button 
           type="button" 
-          class="btn btn-outline btn-sm" 
-          style="flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; text-align: center; gap: 2px;"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px; text-align: center; gap: 3px; background: transparent; border: none; border-right: 1px solid var(--border-subtle); cursor: pointer; font-family: inherit;"
           @click="showPlantModal = true"
         >
           <span style="font-size: 1.25rem;">🌱</span>
-          <div style="font-weight: 700; font-size: 0.72rem;">Tanam Baru</div>
-          <div style="font-size: 0.6rem; color: var(--text-dim);">Input bibit</div>
+          <span style="font-weight: 700; font-size: 0.74rem; color: var(--text-main);">Tanam</span>
         </button>
 
         <button 
           type="button" 
-          class="btn btn-outline btn-sm" 
-          style="flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; text-align: center; gap: 2px;"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px; text-align: center; gap: 3px; background: transparent; border: none; border-right: 1px solid var(--border-subtle); cursor: pointer; font-family: inherit;"
           @click="showEggModal = true"
         >
           <span style="font-size: 1.25rem;">🥚</span>
-          <div style="font-weight: 700; font-size: 0.72rem;">Log Telur</div>
-          <div style="font-size: 0.6rem; color: var(--text-dim);">Panen telur</div>
+          <span style="font-weight: 700; font-size: 0.74rem; color: var(--text-main);">Telur</span>
         </button>
 
         <button 
           type="button" 
-          class="btn btn-outline btn-sm" 
-          style="flex-direction: column; align-items: center; justify-content: center; padding: 8px 4px; text-align: center; gap: 2px; border-color: var(--primary); background: #f0fdf4;"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px; text-align: center; gap: 3px; background: #f0fdf4; border: none; cursor: pointer; font-family: inherit;"
           @click="showQuickConsumeModal = true"
         >
           <span style="font-size: 1.25rem;">🍽️</span>
-          <div style="font-weight: 700; font-size: 0.72rem; color: var(--primary);">Konsumsi</div>
-          <div style="font-size: 0.6rem; color: var(--primary-dark);">Petik sendiri</div>
+          <span style="font-weight: 700; font-size: 0.74rem; color: var(--primary);">Konsumsi</span>
         </button>
       </div>
     </div>
 
-    <!-- SUB-TAB SWITCHER -->
-    <div class="main-tab-nav" style="margin-bottom: 14px;">
+    <!-- Section Divider Strip -->
+    <div class="section-divider"></div>
+
+    <!-- SUB-TAB SWITCHER - Clean Flat Underline -->
+    <div class="main-tab-nav">
       <button 
         type="button" 
         :class="['main-tab-btn', { active: activeTab === 'tanaman' }]"
         @click="activeTab = 'tanaman'"
       >
-        🌱 Tanaman Aktif ({{ activePlants.length }})
+        🌱 Tanaman ({{ activePlants.length }})
       </button>
       <button 
         type="button" 
         :class="['main-tab-btn', { active: activeTab === 'ternak' }]"
         @click="activeTab = 'ternak'"
       >
-        🐔 Ternak Aktif ({{ activeLivestocks.length }})
+        🐔 Ternak ({{ activeLivestocks.length }})
       </button>
       <button 
         type="button" 
         :class="['main-tab-btn', { active: activeTab === 'riwayat' }]"
         @click="activeTab = 'riwayat'"
       >
-        📜 Jurnal Log
+        📜 Riwayat
       </button>
     </div>
 
     <!-- ================= 1. TAB TANAMAN AKTIF ================= -->
     <div v-if="activeTab === 'tanaman'">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">
-          Tanaman Sedang Berjalan di Pekarangan
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border-subtle); background: #f8fafc;">
+        <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-main);">
+          Tanaman Aktif Pekarangan
         </span>
         <button 
           type="button" 
           class="btn btn-primary btn-sm" 
-          style="padding: 4px 10px; font-size: 0.74rem;"
+          style="padding: 3px 8px; font-size: 0.72rem;"
           @click="showPlantModal = true"
         >
-          + Tanam Baru
+          + Tanam
         </button>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 0;">
         <div 
           v-for="plant in activePlants" 
           :key="plant.id" 
           class="card" 
-          style="margin-bottom: 0; padding: 14px;"
+          style="margin-bottom: 0; padding: 10px 14px; border-radius: 0; border-bottom: 1px solid var(--border-subtle);"
         >
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <div style="width: 40px; height: 40px; border-radius: var(--radius-sm); background: #f0fdf4; border: 1px solid var(--primary-border); display: flex; align-items: center; justify-content: center; font-size: 22px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <div style="width: 36px; height: 36px; border-radius: 4px; background: #f0fdf4; border: 1px solid var(--primary-border); display: flex; align-items: center; justify-content: center; font-size: 18px;">
                 {{ plant.icon }}
               </div>
               <div>
-                <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-main);">
+                <div style="font-weight: 800; font-size: 0.88rem; color: var(--text-main);">
                   {{ plant.name }}
                 </div>
-                <div style="font-size: 0.72rem; color: var(--text-dim);">
+                <div style="font-size: 0.7rem; color: var(--text-dim);">
                   {{ plant.location }} • {{ plant.qty }}
                 </div>
               </div>
             </div>
-            <span class="geo-badge">
-              {{ plant.hst }} HST
-            </span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="geo-badge">
+                {{ plant.hst }} HST
+              </span>
+              <button 
+                type="button" 
+                class="btn-icon" 
+                style="width: 24px; height: 24px; font-size: 0.68rem; color: #dc2626; border-radius: 4px; background: #fef2f2; border: 1px solid #fee2e2;"
+                title="Hapus"
+                @click="deletePlantItem(plant)"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
 
           <!-- Progress Bar Pertumbuhan -->
-          <div style="margin: 8px 0;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 4px;">
-              <span style="font-weight: 700; color: var(--primary);">{{ plant.phase }}</span>
-              <span style="color: var(--text-muted);">Target Panen: {{ plant.targetHst }} HST</span>
+          <div style="margin: 4px 0 8px 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.66rem; color: var(--text-dim); margin-bottom: 2px;">
+              <span>{{ plant.phase }}</span>
+              <span>Target: {{ plant.targetHst }} HST</span>
             </div>
-            <div class="readiness-track">
+            <div class="readiness-track" style="height: 4px; border-radius: 2px;">
               <div class="readiness-fill" :style="{ width: plant.progressPercent + '%' }"></div>
             </div>
           </div>
 
           <!-- Action Buttons -->
-          <div style="display: flex; gap: 6px; margin-top: 10px;">
+          <div style="display: flex; gap: 6px;">
             <button 
               type="button" 
               class="btn btn-outline btn-sm btn-full"
-              style="font-size: 0.72rem; padding: 6px;"
+              style="font-size: 0.72rem; padding: 5px;"
               @click="openPhaseModal(plant)"
             >
-              🔄 Update Fase
+              🔄 Ubah Fase
             </button>
             <button 
               type="button" 
               class="btn btn-primary btn-sm btn-full"
-              style="font-size: 0.72rem; padding: 6px;"
+              style="font-size: 0.72rem; padding: 5px;"
               @click="openHarvestModal(plant)"
             >
               ✂️ Catat Panen
@@ -487,60 +629,75 @@ const saveQuickConsume = () => {
 
     <!-- ================= 2. TAB TERNAK AKTIF ================= -->
     <div v-if="activeTab === 'ternak'">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-main);">
-          Populasi Kandang Keluarga Produktif
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; border-bottom: 1px solid var(--border-subtle); background: #f8fafc;">
+        <span style="font-size: 0.76rem; font-weight: 700; color: var(--text-main);">
+          Kandang Ternak Aktif
         </span>
+        <button 
+          type="button" 
+          class="btn btn-primary btn-sm" 
+          style="padding: 3px 8px; font-size: 0.72rem;"
+          @click="showLivestockModal = true"
+        >
+          + Ternak
+        </button>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 0;">
         <div 
           v-for="live in activeLivestocks" 
           :key="live.id"
           class="card"
-          style="margin-bottom: 0; padding: 14px;"
+          style="margin-bottom: 0; padding: 10px 14px; border-radius: 0; border-bottom: 1px solid var(--border-subtle);"
         >
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <div style="width: 40px; height: 40px; border-radius: var(--radius-sm); background: #fff7ed; border: 1px solid #fed7aa; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <div style="width: 36px; height: 36px; border-radius: 4px; background: #fff7ed; border: 1px solid #fed7aa; display: flex; align-items: center; justify-content: center; font-size: 18px;">
                 {{ live.icon }}
               </div>
               <div>
-                <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-main);">
+                <div style="font-weight: 800; font-size: 0.88rem; color: var(--text-main);">
                   {{ live.type }}
                 </div>
-                <div style="font-size: 0.72rem; color: var(--text-dim);">
-                  {{ live.qty }} • {{ live.housing }}
+                <div style="font-size: 0.7rem; color: var(--text-dim);">
+                  {{ live.name }} • {{ live.qty }}
                 </div>
               </div>
             </div>
+            <button 
+              type="button" 
+              class="btn-icon" 
+              style="width: 24px; height: 24px; font-size: 0.68rem; color: #dc2626; border-radius: 4px; background: #fef2f2; border: 1px solid #fee2e2;"
+              title="Hapus"
+              @click="deleteLivestockItem(live)"
+            >
+              🗑️
+            </button>
           </div>
 
-          <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center;">
+          <!-- Yield Stats (Divided by crisp line, no round box) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); margin: 6px 0;">
             <div>
-              <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">Hasil Telur Hari Ini</span>
-              <span style="font-weight: 800; font-size: 1.15rem; color: var(--primary);">
+              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Telur Hari Ini</span>
+              <span style="font-weight: 800; font-size: 1.05rem; color: var(--primary);">
                 {{ live.todayYield }} Butir
               </span>
             </div>
             <div style="text-align: right;">
-              <span style="font-size: 0.72rem; color: var(--text-dim); display: block;">Total 7 Hari</span>
-              <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">
+              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Total 7 Hari</span>
+              <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">
                 {{ live.weekYield }} Butir
               </span>
             </div>
           </div>
 
-          <p style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin-bottom: 10px;">
-            🥣 {{ live.note }}
-          </p>
-
           <button 
             type="button" 
             class="btn btn-primary btn-sm btn-full"
+            style="padding: 6px; font-size: 0.74rem;"
             @click="quickAddEgg(live)"
           >
-            🥚 +1 Tambah Telur Hari Ini
+            🥚 +1 Tambah Telur
           </button>
         </div>
       </div>
@@ -625,14 +782,25 @@ const saveQuickConsume = () => {
           />
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Estimasi Hari Siap Panen (Target HST)</label>
-          <input 
-            v-model.number="newPlant.targetHst" 
-            type="number" 
-            class="form-control" 
-            placeholder="Contoh: 25 untuk kangkung, 75 untuk cabai"
-          />
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div class="form-group">
+            <label class="form-label">Tanggal Tanam</label>
+            <input 
+              v-model="newPlant.plantedDate" 
+              type="date" 
+              class="form-control" 
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Target Panen (HST)</label>
+            <input 
+              v-model.number="newPlant.targetHst" 
+              type="number" 
+              class="form-control" 
+              placeholder="Contoh: 60"
+            />
+          </div>
         </div>
 
         <div style="display: flex; gap: 8px; margin-top: 14px;">
@@ -675,18 +843,76 @@ const saveQuickConsume = () => {
           <button 
             type="button" 
             class="btn btn-primary btn-full" 
-            @click="() => {
-              const live = activeLivestocks.find(l => l.id === eggLogForm.livestockId);
-              if (live) {
-                live.todayYield += eggLogForm.count;
-                live.weekYield += eggLogForm.count;
-                emit('showToast', `Berhasil mencatat +${eggLogForm.count} telur untuk ${live.name}`);
-              }
-              showEggModal = false;
-            }"
+            @click="saveEggLog"
           >
             Simpan Log
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: TAMBAH TERNAK BARU -->
+    <div v-if="showLivestockModal" class="modal-backdrop" @click.self="showLivestockModal = false">
+      <div class="modal-sheet">
+        <div class="modal-header">
+          <h3>🐔 Tambah Kelompok Ternak</h3>
+          <button class="btn-icon" @click="showLivestockModal = false">✕</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Jenis Komoditas Ternak <span class="req">*</span></label>
+          <select v-model="newLivestock.type" class="form-control">
+            <option value="Ayam Kampung Petelur">🐔 Ayam Kampung Petelur</option>
+            <option value="Bebek Petelur">🦆 Bebek Petelur</option>
+            <option value="Burung Puyuh">🐦 Burung Puyuh</option>
+            <option value="Ikan Lele / Nila">🐟 Ikan Lele / Nila</option>
+            <option value="Kelinci">🐇 Kelinci</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nama / Identitas Kandang <span class="req">*</span></label>
+          <input 
+            v-model="newLivestock.name" 
+            type="text" 
+            class="form-control" 
+            placeholder="Contoh: Kandang Puyuh Samping, Kolam Belakang"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Populasi / Jumlah Ekor</label>
+          <input 
+            v-model="newLivestock.qty" 
+            type="text" 
+            class="form-control" 
+            placeholder="Contoh: 15 Ekor Betina"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Model Kandang / Kolam</label>
+          <input 
+            v-model="newLivestock.housing" 
+            type="text" 
+            class="form-control" 
+            placeholder="Contoh: Kandang Baterai Kawat, Kolam Terpal"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Catatan Pakan / Pemeliharaan</label>
+          <textarea 
+            v-model="newLivestock.note" 
+            class="form-control" 
+            rows="2"
+            placeholder="Contoh: Pakan konsentrat + dedak, sayur sisa dapur"
+          ></textarea>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 14px;">
+          <button type="button" class="btn btn-outline btn-full" @click="showLivestockModal = false">Batal</button>
+          <button type="button" class="btn btn-primary btn-full" @click="saveNewLivestock">Simpan Ternak</button>
         </div>
       </div>
     </div>
@@ -704,7 +930,7 @@ const saveQuickConsume = () => {
         </div>
 
         <div class="form-group">
-          <label class="form-label">Jumlah / Berat Panen</label>
+          <label class="form-label">Jumlah / Berat Panen <span class="req">*</span></label>
           <input 
             v-model="harvestForm.qty" 
             type="text" 
@@ -714,11 +940,21 @@ const saveQuickConsume = () => {
         </div>
 
         <div class="form-group">
+          <label class="form-label">Estimasi Nilai Panen (Rp) <span style="font-size: 0.72rem; color: var(--text-dim);">(Tercatat di Penghematan)</span></label>
+          <input 
+            v-model.number="harvestForm.estimatedValue" 
+            type="number" 
+            class="form-control" 
+            placeholder="Contoh: 20000"
+          />
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Alokasi Hasil Panen</label>
           <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
             <label v-for="opt in [
               { val: 'konsumsi', icon: '🍽️', label: 'Konsumsi Mandiri', sub: 'Hemat pengeluaran belanja keluarga', soon: false },
-              { val: 'sedekah',  icon: '❤️', label: 'Sedekah ke Tetangga', sub: 'Tercatat di Buku Kas sebagai rekor kebaikan', soon: true },
+              { val: 'sedekah',  icon: '❤️', label: 'Sedekah ke Tetangga', sub: 'Tercatat di Penghematan sebagai rekor kebaikan', soon: true },
               { val: 'barter',   icon: '🧺', label: 'Surplus untuk Barter', sub: 'Ditawarkan ke Bursa Barter lingkungan', soon: true }
             ]" :key="opt.val" :style="{
               display: 'flex', alignItems: 'center', gap: '10px',

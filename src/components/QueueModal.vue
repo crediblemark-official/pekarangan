@@ -21,7 +21,7 @@ const getTypeBadge = (type?: string) => {
     case 'update_phase': return { icon: '🔄', label: 'Update Fase' };
     case 'egg_log': return { icon: '🥚', label: 'Log Telur' };
     case 'harvest': return { icon: '✂️', label: 'Catat Panen' };
-    case 'consume': return { icon: '🍽️', label: 'Buku Kas' };
+    case 'consume': return { icon: '🍽️', label: 'Penghematan' };
     case 'option': return { icon: '✨', label: 'Pilihan Baru' };
     default: return { icon: '💾', label: 'Data Lokal' };
   }

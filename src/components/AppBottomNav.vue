@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type AppNavTab = 'home' | 'barter' | 'record' | 'savings' | 'market';
+export type AppNavTab = 'home' | 'community' | 'record' | 'insight' | 'profile';
 
 const props = defineProps<{
   activeTab: AppNavTab;
@@ -30,6 +30,7 @@ const handleCenterClick = () => {
 
 <template>
   <nav class="app-bottom-nav">
+    <!-- 1. Home -->
     <button 
       type="button" 
       class="nav-btn" 
@@ -37,20 +38,21 @@ const handleCenterClick = () => {
       @click="$emit('changeTab', 'home')"
     >
       <span class="nav-icon">🏡</span>
-      <span class="nav-label">Beranda</span>
+      <span class="nav-label">Home</span>
     </button>
 
+    <!-- 2. Community -->
     <button 
       type="button" 
       class="nav-btn" 
-      :class="{ active: activeTab === 'barter' && !isSurveyMode }"
-      @click="$emit('changeTab', 'barter')"
+      :class="{ active: activeTab === 'community' && !isSurveyMode }"
+      @click="$emit('changeTab', 'community')"
     >
-      <span class="nav-icon">🧺</span>
-      <span class="nav-label">Barter</span>
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">Community</span>
     </button>
 
-    <!-- Center Accent Button: Catat OR Lanjut/Simpan when in Survey mode -->
+    <!-- 3. Catat (Center Accent Button: Catat OR Lanjut/Simpan when in Survey mode) -->
     <button 
       type="button" 
       class="nav-btn nav-primary-accent" 
@@ -76,26 +78,27 @@ const handleCenterClick = () => {
       </template>
     </button>
 
-    <!-- Unified Feature: Tabungan & Buku Kas -->
+    <!-- 4. Insight (Kas, Tabungan, & Statistik Produksi) -->
     <button 
       type="button" 
       class="nav-btn" 
-      :class="{ active: activeTab === 'savings' && !isSurveyMode }"
-      @click="$emit('changeTab', 'savings')"
+      :class="{ active: activeTab === 'insight' && !isSurveyMode }"
+      @click="$emit('changeTab', 'insight')"
     >
-      <span class="nav-icon">💰</span>
-      <span class="nav-label">Kas & Poin</span>
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Insight</span>
     </button>
 
-    <!-- Dedicated Feature: Rumah Produksi Dapur -->
+    <!-- 5. Profile -->
     <button 
       type="button" 
       class="nav-btn" 
-      :class="{ active: activeTab === 'market' && !isSurveyMode }"
-      @click="$emit('changeTab', 'market')"
+      :class="{ active: activeTab === 'profile' && !isSurveyMode }"
+      @click="$emit('changeTab', 'profile')"
     >
-      <span class="nav-icon">🍯</span>
-      <span class="nav-label">Olahan</span>
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profile</span>
     </button>
   </nav>
 </template>
+

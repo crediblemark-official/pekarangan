@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import type { MemberData, YardData, AssetItem, SurveyPayload, SyncQueueItem, SedekahLog } from './types';
 import { GeoService, type GeoLocationResult } from './services/geo';
 import { CameraService, type CompressionResult } from './services/camera';
@@ -9,10 +9,14 @@ import { ApiService } from './services/api';
 // Navigation & Screen Components
 import AppBottomNav, { type AppNavTab } from './components/AppBottomNav.vue';
 import HomeDashboard from './components/HomeDashboard.vue';
-import BarterMockup from './components/BarterMockup.vue';
+import CommunityHub from './components/CommunityHub.vue';
 import RecordHub from './components/RecordHub.vue';
 import SavingsKasMockup from './components/SavingsKasMockup.vue';
-import ProductionMarketMockup from './components/ProductionMarketMockup.vue';
+import ProfileView from './components/ProfileView.vue';
+import BiometricLockOverlay from './components/BiometricLockOverlay.vue';
+import OnboardingSetup from './components/OnboardingSetup.vue';
+import { SecurityService } from './services/security';
+import { Capacitor } from '@capacitor/core';
 
 // Survey Step Components (Fase 1)
 import Step1Member from './components/Step1Member.vue';
@@ -21,9 +25,48 @@ import Step3Assets from './components/Step3Assets.vue';
 import Step4Review from './components/Step4Review.vue';
 import QueueModal from './components/QueueModal.vue';
 
+// Onboarding State: Wajibkan isi identitas pada instalasi baru jika nama pemilik belum diisi
+const initialSettings = StorageService.getSettings();
+const needsOnboarding = ref(!initialSettings.ownerName || !initialSettings.ownerName.trim());
+const appSessionKey = ref(0);
+
+const onOnboardingDone = () => {
+  needsOnboarding.value = false;
+  appSessionKey.value++;
+  showToast('Identitas pekarangan berhasil disimpan! Selamat datang.', 'success');
+};
+
+// Biometric & Screen Lock State: Aktif di HP Android fisik, langsung terbuka di desktop browser
+const isBiometricEnabled = ref(StorageService.getSettings().isBiometricLockEnabled !== false);
+const isAppLocked = ref(
+  Capacitor.isNativePlatform() &&
+  isBiometricEnabled.value &&
+  !SecurityService.isUnlocked()
+);
+
+const lockAppNow = () => {
+  SecurityService.lockSession();
+  isAppLocked.value = true;
+};
+
+const onAppUnlocked = () => {
+  isAppLocked.value = false;
+  showToast('Kunci layar terbuka. Selamat datang!', 'success');
+};
+
 // Active Screen (Default: 'home' Dashboard!)
 const activeNavTab = ref<AppNavTab | 'survey'>('home');
 const currentStep = ref(1);
+
+const currentNavTitle = computed(() => {
+  switch (activeNavTab.value) {
+    case 'community': return '👥 Direktori Komunitas';
+    case 'record': return '📝 Pusat Pencatatan';
+    case 'insight': return '📊 Insight Penghematan';
+    case 'profile': return '👤 Identitas Pekarangan';
+    default: return 'Pekarangan';
+  }
+});
 
 // Network & Queue State
 const isOnline = ref(navigator.onLine);
@@ -37,10 +80,8 @@ const isCameraLoading = ref(false);
 const showQueueModal = ref(false);
 
 // Sedekah Logs — shared state antara RecordHub (catat panen) dan SavingsKasMockup (tampilkan)
-const sedekahLogs = ref<SedekahLog[]>([
-  { id: 'demo1', title: '🥬 2 Ikat Bayam Segar', date: '22 Sep 2026', note: 'Disedekahkan ke Mbah Mar (tetangga lansia samping rumah).' },
-  { id: 'demo2', title: '🌶️ 1 Pouch Sambal Kemasan Botol', date: '18 Sep 2026', note: 'Dibagikan ke arisan ibu-ibu RT untuk tester produk olahan.' }
-]);
+const sedekahLogs = ref<SedekahLog[]>([]);
+
 
 const addSedekahLog = (log: SedekahLog) => {
   sedekahLogs.value.unshift(log);
@@ -233,6 +274,8 @@ const processSyncItem = async (item: SyncQueueItem) => {
     StorageService.incrementRecordedMembersCount();
   } else if (type === 'plant') {
     await ApiService.savePlant(GAS_URL, item.payload);
+  } else if (type === 'livestock') {
+    await ApiService.saveLivestock(GAS_URL, item.payload);
   } else if (type === 'update_phase') {
     await ApiService.updatePlantPhase(GAS_URL, item.payload.plantId, item.payload.phase, item.payload.progress);
   } else if (type === 'egg_log') {
@@ -318,8 +361,8 @@ onMounted(() => {
         if (cloudData.activityLogs && cloudData.activityLogs.length > 0) {
           StorageService.saveActivityLogs(cloudData.activityLogs);
         }
-        if (cloudData.kasLogs && cloudData.kasLogs.length > 0) {
-          StorageService.saveKasLogs(cloudData.kasLogs);
+        if (cloudData.penghematanLogs && cloudData.penghematanLogs.length > 0) {
+          StorageService.savePengematanLogs(cloudData.penghematanLogs);
         }
       }
     }).catch(() => {});
@@ -341,12 +384,19 @@ onMounted(() => {
   <div class="app-container">
     <!-- Top Sticky Header: Visible on regular screens -->
     <header v-if="activeNavTab !== 'survey'" class="app-header">
-      <div class="brand-wrapper" @click="activeNavTab = 'home'" style="cursor: pointer;">
+      <!-- 1. Home Dashboard: App Brand Header -->
+      <div v-if="activeNavTab === 'home'" class="brand-wrapper">
         <div class="brand-logo">🌿</div>
         <div class="brand-info">
           <h1>Pekarangan</h1>
         </div>
       </div>
+
+      <!-- 2. Other Screens: Page Title Header (Not App Header) -->
+      <div v-else class="page-title-wrapper">
+        <h1 class="page-title-text">{{ currentNavTitle }}</h1>
+      </div>
+
       <div class="header-actions">
         <!-- Status dot -->
         <span 
@@ -363,10 +413,20 @@ onMounted(() => {
         >
           📥 <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent);">{{ syncQueue.length }}</span>
         </button>
+
+        <!-- Quick Biometric Lock Button -->
+        <button 
+          v-if="isBiometricEnabled" 
+          class="btn-icon" 
+          @click="lockAppNow"
+          title="Kunci aplikasi dengan sidik jari/kunci layar"
+        >
+          🔒
+        </button>
       </div>
     </header>
 
-    <!-- Unified Survey Top Header (Back Button + Step Wizard merged into ONE bar) -->
+    <!-- Unified Survey Top Header (Connected Dots Stepper - Clean & Compact) -->
     <header v-if="activeNavTab === 'survey'" class="survey-top-header">
       <button 
         type="button" 
@@ -377,49 +437,29 @@ onMounted(() => {
         <span style="font-size: 1.25rem; font-weight: 700; line-height: 1;">←</span>
       </button>
 
-      <div class="steps-container" style="flex: 1;">
-        <div class="steps-track" style="left: 14px; right: 14px;">
+      <div class="survey-dots-wrapper">
+        <div class="survey-dots-track">
           <div 
-            class="steps-track-fill" 
+            class="survey-dots-track-fill" 
             :style="{ width: ((currentStep - 1) / 3) * 100 + '%' }"
           ></div>
         </div>
 
         <button 
-          class="step-indicator" 
-          :class="{ active: currentStep === 1, completed: currentStep > 1 }"
-          @click="currentStep = 1"
+          v-for="step in [1, 2, 3, 4]" 
+          :key="step"
+          type="button"
+          class="survey-dot-item" 
+          :class="{ active: currentStep === step, completed: currentStep > step }"
+          @click="currentStep >= step ? currentStep = step : null"
+          :title="'Langkah ' + step"
         >
-          <div class="step-bubble">{{ currentStep > 1 ? '✓' : '1' }}</div>
-          <span class="step-label">Warga</span>
+          <span class="survey-dot"></span>
         </button>
+      </div>
 
-        <button 
-          class="step-indicator" 
-          :class="{ active: currentStep === 2, completed: currentStep > 2 }"
-          @click="currentStep >= 2 ? currentStep = 2 : null"
-        >
-          <div class="step-bubble">{{ currentStep > 2 ? '✓' : '2' }}</div>
-          <span class="step-label">Lahan & Foto</span>
-        </button>
-
-        <button 
-          class="step-indicator" 
-          :class="{ active: currentStep === 3, completed: currentStep > 3 }"
-          @click="currentStep >= 3 ? currentStep = 3 : null"
-        >
-          <div class="step-bubble">{{ currentStep > 3 ? '✓' : '3' }}</div>
-          <span class="step-label">Aset</span>
-        </button>
-
-        <button 
-          class="step-indicator" 
-          :class="{ active: currentStep === 4, completed: currentStep > 4 }"
-          @click="currentStep >= 4 ? currentStep = 4 : null"
-        >
-          <div class="step-bubble">4</div>
-          <span class="step-label">Kirim</span>
-        </button>
+      <div class="survey-step-counter">
+        {{ currentStep }}/4
       </div>
     </header>
 
@@ -459,21 +499,22 @@ onMounted(() => {
     </div>
 
     <!-- Main Content Views -->
-    <main class="app-content" style="padding-bottom: 80px;">
-      <!-- 1. BERANDA (HOME DASHBOARD) -->
+    <main class="app-content" :key="appSessionKey">
+      <!-- 1. HOME (BERANDA) -->
       <HomeDashboard 
         v-if="activeNavTab === 'home'" 
         @navigate="(tab) => activeNavTab = tab"
       />
 
-      <!-- 2. BURSA BARTER MOCKUP -->
-      <BarterMockup 
-        v-if="activeNavTab === 'barter'"
+      <!-- 2. COMMUNITY (DIREKTORI PEKARANGAN WARGA) -->
+      <CommunityHub 
+        v-if="activeNavTab === 'community'"
         @show-toast="showToast"
-        @go-to-survey="activeNavTab = 'record'"
+        @go-to-record="activeNavTab = 'record'"
+        @go-to-profile="activeNavTab = 'profile'"
       />
 
-      <!-- 3. PUSAT PENCATATAN (MENU CATAT) -->
+      <!-- 3. CATAT (PUSAT PENCATATAN PEKARANGAN) -->
       <RecordHub 
         v-if="activeNavTab === 'record'"
         @open-survey="activeNavTab = 'survey'"
@@ -481,9 +522,8 @@ onMounted(() => {
         @add-sedekah="addSedekahLog"
       />
 
-      <!-- 4. FORM PENDATAAN (FASE 1) -->
+      <!-- SURVEY / PENDATAAN (FASE 1) -->
       <div v-if="activeNavTab === 'survey'">
-
         <Step1Member 
           v-if="currentStep === 1"
           :member="member"
@@ -513,23 +553,37 @@ onMounted(() => {
           :yard="yard"
           :assets="assets"
           :photo="photo"
-          @go-to-ecosystem="activeNavTab = 'barter'"
+          @go-to-ecosystem="activeNavTab = 'community'"
         />
       </div>
 
-      <!-- 5. TABUNGAN POIN & BUKU KAS PENGHEMATAN (SATU FITUR) -->
+      <!-- 4. INSIGHT (TABUNGAN POIN & LOG PENGHEMATAN) -->
       <SavingsKasMockup 
-        v-if="activeNavTab === 'savings'"
+        v-if="activeNavTab === 'insight'"
         :sedekah-logs="sedekahLogs"
         @show-toast="showToast"
       />
 
-      <!-- 6. RUMAH PRODUKSI DAPUR (PABRIK MINI) -->
-      <ProductionMarketMockup 
-        v-if="activeNavTab === 'market'"
+      <!-- 5. PROFILE (PROFIL & PENGATURAN) -->
+      <ProfileView 
+        v-if="activeNavTab === 'profile'"
         @show-toast="showToast"
+        @open-queue="showQueueModal = true"
+        @lock-app="lockAppNow"
       />
     </main>
+
+    <!-- Wajib Isi Identitas Saat Instalasi Baru / Fresh Install -->
+    <OnboardingSetup 
+      v-if="needsOnboarding" 
+      @done="onOnboardingDone" 
+    />
+
+    <!-- Biometric & Screen Lock Full-Screen Gate -->
+    <BiometricLockOverlay 
+      v-if="isAppLocked && !needsOnboarding" 
+      @unlocked="onAppUnlocked" 
+    />
 
     <!-- Fixed Bottom Navigation Bar (Tombol tengah berubah jadi Lanjut / Simpan saat mode survei) -->
     <AppBottomNav 

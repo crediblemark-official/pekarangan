@@ -41,8 +41,8 @@ const onAddRtRw = (newOpt: SelectOption) => {
 <template>
   <section class="step-view active">
     <div class="section-header">
-      <h2>👤 Identitas Anggota</h2>
-      <p>Data penanggung jawab pekarangan / kepala keluarga</p>
+      <h2>👤 Data Pemilik Pekarangan</h2>
+      <p>Identitas pemilik pekarangan atau keluarga</p>
     </div>
 
     <div class="card">

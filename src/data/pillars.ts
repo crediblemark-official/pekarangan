@@ -34,7 +34,7 @@ export const pillarDetails: Record<PilarKategori, { title: string; subtitle: str
     subtitle: 'Integrator Rantai Nilai Mikro & Hilirisasi Dapur',
     desc: 'Unit pengolahan pascapanen dapur: mengolah surplus panen & ternak menjadi produk bernilai tambah (tahan simpan & bernilai jual).',
     icon: '🍯',
-    badge: 'Pabrik Mini'
+    badge: 'Olahan'
   }
 };
 

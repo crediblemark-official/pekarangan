@@ -12,20 +12,31 @@ import type {
   LivestockItem,
   ActivityLogItem,
   KasLogItem,
-  MasterOptions
+  HarvestRecordItem,
+  MasterOptions,
+  CommunityMemberItem
 } from "../types";
 
+/**
+ * Storage key version:
+ * - v2: data lama — mengandung seed/demo data palsu (Budi Santoso, dll)
+ * - v3: bersih — fresh install tanpa data makhluq ghaib
+ * Settings tetap v2 agar GAS URL & preferensi user tidak hilang.
+ */
 const KEYS = {
-  SETTINGS: "pekarangan_settings_v2",
-  SYNC_QUEUE: "pekarangan_sync_queue_v2",
-  CURRENT_DRAFT: "pekarangan_active_draft_v2",
-  PLANTS: "pekarangan_plants_v2",
-  LIVESTOCK: "pekarangan_livestock_v2",
-  ACTIVITY_LOGS: "pekarangan_activity_logs_v2",
-  KAS_LOGS: "pekarangan_kas_logs_v2",
-  MASTER_OPTIONS: "pekarangan_master_options_v2",
-  STATS: "pekarangan_stats_v2"
+  SETTINGS:          'pekarangan_settings_v2',      // v2 dipertahankan — simpan GAS URL
+  SYNC_QUEUE:        'pekarangan_sync_queue_v3',
+  CURRENT_DRAFT:     'pekarangan_active_draft_v3',
+  PLANTS:            'pekarangan_plants_v3',
+  LIVESTOCK:         'pekarangan_livestock_v3',
+  ACTIVITY_LOGS:     'pekarangan_activity_logs_v3',
+  PENGHEMATAN_LOGS:  'pekarangan_penghematan_logs_v3',
+  HARVEST_RECORDS:   'pekarangan_harvest_records_v3',
+  MASTER_OPTIONS:    'pekarangan_master_options_v3',
+  STATS:             'pekarangan_stats_v3',
+  MEMBERS:           'pekarangan_members_v3'
 };
+
 
 const DEFAULT_OPTIONS: MasterOptions = {
   rt_rw: ["01/02", "02/02", "03/02", "04/02", "05/02"],
@@ -60,128 +71,48 @@ const DEFAULT_OPTIONS: MasterOptions = {
   ]
 };
 
-const SEED_PLANTS: PlantItem[] = [
-  {
-    id: "p1",
-    name: "Cabai Rawit Merah",
-    variety: "Varietas Bara",
-    location: "Teras Depan (Polybag)",
-    qty: "6 Polibag",
-    plantedDate: "13 Agu 2026",
-    hst: 42,
-    targetHst: 75,
-    phase: "🌸 Sedang Berbunga",
-    icon: "🌶️",
-    progressPercent: 56
-  },
-  {
-    id: "p2",
-    name: "Kangkung Cabut",
-    variety: "Kangkung Daun Sempit",
-    location: "Bedengan Belakang",
-    qty: "1 Bedengan (2x1 m)",
-    plantedDate: "2 Sep 2026",
-    hst: 22,
-    targetHst: 25,
-    phase: "🥬 Siap Panen!",
-    icon: "🥬",
-    progressPercent: 88
-  },
-  {
-    id: "p3",
-    name: "Jahe Merah (TOGA)",
-    variety: "Rimpang Super",
-    location: "Pekarangan Samping",
-    qty: "4 Pot",
-    plantedDate: "18 Jul 2026",
-    hst: 68,
-    targetHst: 180,
-    phase: "🌿 Rumpun Tumbuh Subur",
-    icon: "🌿",
-    progressPercent: 38
-  }
-];
+const SEED_PENGHEMATAN: KasLogItem[] = [];
 
-const SEED_LIVESTOCK: LivestockItem[] = [
-  {
-    id: "l1",
-    type: "Ayam Kampung Petelur",
-    name: "Kandang Ayam Belakang",
-    qty: "5 Ekor (4 Betina, 1 Jantan)",
-    housing: "Kandang Sekat Bambu",
-    todayYield: 3,
-    weekYield: 21,
-    icon: "🐔",
-    note: "Pakan: Bekatul, sayur sisa dapur, maggot BSF"
-  },
-  {
-    id: "l2",
-    type: "Bebek Petelur",
-    name: "Kandang Bebek Sudut Kolam",
-    qty: "3 Ekor Betina",
-    housing: "Kandang Terbuka Serbuk Kayu",
-    todayYield: 2,
-    weekYield: 14,
-    icon: "🦆",
-    note: "Produksi telur konsisten, kuning telur jingga pekat"
-  }
-];
 
-const SEED_ACTIVITIES: ActivityLogItem[] = [
-  { id: "a1", title: "Panen 2 Ikat Kangkung Segar", type: "panen", date: "Hari ini, 07:15", note: "Untuk konsumsi sayur bening makan siang keluarga" },
-  { id: "a2", title: "Kumpul Telur Ayam (+3 butir)", type: "ternak", date: "Hari ini, 06:40", note: "Telur bersih langsung disimpan di rak dapur" },
-  { id: "a3", title: "Pupuk Susulan Kompos Cabai Rawit", type: "rawat", date: "Kemarin, 16:30", note: "Diberi 1 genggam kompos matang per polybag" },
-  { id: "a4", title: "Semai Benih Terong Ungu (10 polybag)", type: "tanam", date: "21 Sep 2026", note: "Mulai berkecambah 4 polybag" }
-];
+const SEED_MEMBERS: CommunityMemberItem[] = [];
 
-const SEED_KAS: KasLogItem[] = [
-  {
-    id: "c1",
-    item: "🥚 3 Butir Telur Ayam",
-    meal: "🍳 Sarapan Pagi",
-    note: "Telur dadar lalap daun mangkokan pekarangan",
-    date: "Hari ini, 07:15",
-    savedValue: 9000
-  },
-  {
-    id: "c2",
-    item: "🥬 2 Ikat Kangkung Segar",
-    meal: "🍲 Makan Siang",
-    note: "Tumis kangkung terasi pedas manis",
-    date: "Hari ini, 12:20",
-    savedValue: 10000
-  },
-  {
-    id: "c3",
-    item: "🌶️ 1 Genggam Cabai Rawit (50g)",
-    meal: "🍚 Makan Malam",
-    note: "Sambal bawang ulek segar dari 3 pot teras",
-    date: "Kemarin, 18:40",
-    savedValue: 4000
-  },
-  {
-    id: "c4",
-    item: "🌿 Rimpang Jahe & Serai",
-    meal: "☕ Minuman Sehat",
-    note: "Wedang jahe anget malam hari pengganti suplemen",
-    date: "22 Sep 2026",
-    savedValue: 6000
-  }
-];
 
 export const StorageService = {
   getSettings(): AppSettings {
     try {
       const data = localStorage.getItem(KEYS.SETTINGS);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return {
+          gasUrl: parsed.gasUrl || (import.meta.env.VITE_GAS_URL as string) || '',
+          defaultRtRw: parsed.defaultRtRw || '',
+          cadreName: parsed.cadreName || '',
+          ownerName: parsed.ownerName || parsed.cadreName || '',
+          yardName: parsed.yardName || '',
+          phone: parsed.phone || '',
+          addressDetail: parsed.addressDetail || '',
+          landStatus: parsed.landStatus || 'Milik Sendiri',
+          landArea: parsed.landArea || '10-30 m²',
+          theme: parsed.theme || 'dark',
+          isBiometricLockEnabled: parsed.isBiometricLockEnabled !== false,
+          deviceId: parsed.deviceId
+        };
+      }
     } catch (e) {
-      console.warn("Error reading settings", e);
+      console.warn('Error reading settings', e);
     }
     return {
-      gasUrl: (import.meta.env.VITE_GAS_URL as string) || "",
-      defaultRtRw: "",
-      cadreName: "",
-      theme: "dark"
+      gasUrl: (import.meta.env.VITE_GAS_URL as string) || '',
+      defaultRtRw: '',
+      cadreName: '',
+      ownerName: '',
+      yardName: '',
+      phone: '',
+      addressDetail: '',
+      landStatus: 'Milik Sendiri',
+      landArea: '10-30 m²',
+      theme: 'dark',
+      isBiometricLockEnabled: true
     };
   },
 
@@ -255,13 +186,39 @@ export const StorageService = {
   },
 
   // --- TANAMAN (PLANTS) ---
+  computePlantHst(plant: PlantItem): number {
+    if (plant.plantedTimestamp) {
+      const diffMs = Date.now() - plant.plantedTimestamp;
+      return Math.max(1, Math.floor(diffMs / 86400000) + 1);
+    }
+    if (plant.plantedDate) {
+      const parsed = Date.parse(plant.plantedDate);
+      if (!isNaN(parsed)) {
+        const diffMs = Date.now() - parsed;
+        return Math.max(1, Math.floor(diffMs / 86400000) + 1);
+      }
+    }
+    return plant.hst || 1;
+  },
+
   getPlants(): PlantItem[] {
+    let list: PlantItem[] = [];
     try {
       const raw = localStorage.getItem(KEYS.PLANTS);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    localStorage.setItem(KEYS.PLANTS, JSON.stringify(SEED_PLANTS));
-    return [...SEED_PLANTS];
+      list = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      list = [];
+    }
+
+    // Refresh dynamic HST and progress
+    list.forEach(p => {
+      p.hst = this.computePlantHst(p);
+      if (!p.phase?.includes('Selesai')) {
+        p.progressPercent = Math.min(100, Math.round((p.hst / (p.targetHst || 60)) * 100));
+      }
+    });
+
+    return list;
   },
 
   savePlants(plants: PlantItem[]): void {
@@ -271,6 +228,11 @@ export const StorageService = {
   addPlant(plant: PlantItem): void {
     const list = this.getPlants();
     list.unshift(plant);
+    this.savePlants(list);
+  },
+
+  deletePlant(plantId: string): void {
+    const list = this.getPlants().filter(p => p.id !== plantId);
     this.savePlants(list);
   },
 
@@ -286,22 +248,59 @@ export const StorageService = {
 
   // --- TERNAK (LIVESTOCK) ---
   getLivestocks(): LivestockItem[] {
+    let list: LivestockItem[] = [];
     try {
       const raw = localStorage.getItem(KEYS.LIVESTOCK);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    localStorage.setItem(KEYS.LIVESTOCK, JSON.stringify(SEED_LIVESTOCK));
-    return [...SEED_LIVESTOCK];
+      list = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      list = [];
+    }
+
+    // Otomatis reset produksi telur harian jika ganti hari
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let hasChanged = false;
+    list.forEach(l => {
+      if (!l.lastYieldDate) {
+        l.lastYieldDate = todayStr;
+        hasChanged = true;
+      } else if (l.lastYieldDate !== todayStr) {
+        l.todayYield = 0;
+        l.lastYieldDate = todayStr;
+        hasChanged = true;
+      }
+    });
+
+    if (hasChanged) {
+      this.saveLivestocks(list);
+    }
+
+    return list;
   },
 
   saveLivestocks(livestocks: LivestockItem[]): void {
     localStorage.setItem(KEYS.LIVESTOCK, JSON.stringify(livestocks));
   },
 
+  addLivestock(livestock: LivestockItem): void {
+    const list = this.getLivestocks();
+    list.unshift(livestock);
+    this.saveLivestocks(list);
+  },
+
+  deleteLivestock(livestockId: string): void {
+    const list = this.getLivestocks().filter(l => l.id !== livestockId);
+    this.saveLivestocks(list);
+  },
+
   addEggToLivestock(livestockId: string, count: number): void {
     const list = this.getLivestocks();
     const target = list.find(l => l.id === livestockId);
     if (target) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (target.lastYieldDate !== todayStr) {
+        target.todayYield = 0;
+        target.lastYieldDate = todayStr;
+      }
       target.todayYield += count;
       target.weekYield += count;
       this.saveLivestocks(list);
@@ -314,8 +313,8 @@ export const StorageService = {
       const raw = localStorage.getItem(KEYS.ACTIVITY_LOGS);
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    localStorage.setItem(KEYS.ACTIVITY_LOGS, JSON.stringify(SEED_ACTIVITIES));
-    return [...SEED_ACTIVITIES];
+    localStorage.setItem(KEYS.ACTIVITY_LOGS, JSON.stringify([]));
+    return [];
   },
 
   saveActivityLogs(logs: ActivityLogItem[]): void {
@@ -328,28 +327,53 @@ export const StorageService = {
     this.saveActivityLogs(list);
   },
 
-  // --- BUKU KAS (PENGHEMATAN) ---
-  getKasLogs(): KasLogItem[] {
+  // --- PANEN RIIL (HARVEST RECORDS) ---
+  getHarvestRecords(): HarvestRecordItem[] {
     try {
-      const raw = localStorage.getItem(KEYS.KAS_LOGS);
+      const raw = localStorage.getItem(KEYS.HARVEST_RECORDS);
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    localStorage.setItem(KEYS.KAS_LOGS, JSON.stringify(SEED_KAS));
-    return [...SEED_KAS];
+    // Kosong jika belum ada data panen nyata
+    return [];
   },
 
-  saveKasLogs(logs: KasLogItem[]): void {
-    localStorage.setItem(KEYS.KAS_LOGS, JSON.stringify(logs));
+  saveHarvestRecords(records: HarvestRecordItem[]): void {
+    localStorage.setItem(KEYS.HARVEST_RECORDS, JSON.stringify(records));
   },
 
-  addKasLog(log: KasLogItem): void {
-    const list = this.getKasLogs();
+  addHarvestRecord(record: HarvestRecordItem): void {
+    const list = this.getHarvestRecords();
+    list.unshift(record);
+    this.saveHarvestRecords(list);
+  },
+
+  getTotalHarvestValue(): number {
+    const records = this.getHarvestRecords();
+    return records.reduce((acc, curr) => acc + (Number(curr.estimatedValue) || 0), 0);
+  },
+
+  // --- PENGHEMATAN (LOG KONSUMSI MANDIRI) ---
+  getPengematanLogs(): KasLogItem[] {
+    try {
+      const raw = localStorage.getItem(KEYS.PENGHEMATAN_LOGS);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    localStorage.setItem(KEYS.PENGHEMATAN_LOGS, JSON.stringify(SEED_PENGHEMATAN));
+    return [...SEED_PENGHEMATAN];
+  },
+
+  savePengematanLogs(logs: KasLogItem[]): void {
+    localStorage.setItem(KEYS.PENGHEMATAN_LOGS, JSON.stringify(logs));
+  },
+
+  addPengematanLog(log: KasLogItem): void {
+    const list = this.getPengematanLogs();
     list.unshift(log);
-    this.saveKasLogs(list);
+    this.savePengematanLogs(list);
   },
 
   getTotalSavings(): number {
-    const logs = this.getKasLogs();
+    const logs = this.getPengematanLogs();
     return logs.reduce((acc, curr) => acc + (Number(curr.savedValue) || 0), 0);
   },
 
@@ -401,7 +425,7 @@ export const StorageService = {
         if (typeof parsed.membersCount === "number") return parsed.membersCount;
       }
     } catch (e) {}
-    return 18; // baseline
+    return 0; // fresh install
   },
 
   incrementRecordedMembersCount(): number {
@@ -413,5 +437,25 @@ export const StorageService = {
 
   setRecordedMembersCount(count: number): void {
     localStorage.setItem(KEYS.STATS, JSON.stringify({ membersCount: count }));
+  },
+
+  // --- DIREKTORI ANGGOTA KOMUNITAS ---
+  getMembers(): CommunityMemberItem[] {
+    try {
+      const raw = localStorage.getItem(KEYS.MEMBERS);
+      return raw ? JSON.parse(raw) : [...SEED_MEMBERS];
+    } catch {
+      return [...SEED_MEMBERS];
+    }
+  },
+
+  saveMembers(members: CommunityMemberItem[]): void {
+    localStorage.setItem(KEYS.MEMBERS, JSON.stringify(members));
+  },
+
+  addMember(member: CommunityMemberItem): void {
+    const list = this.getMembers();
+    list.unshift(member);
+    this.saveMembers(list);
   }
 };

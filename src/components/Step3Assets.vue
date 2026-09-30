@@ -185,7 +185,7 @@ const removeAsset = (index: number) => {
           <div class="asset-item-header">
             <div class="asset-item-title">
               <span>{{ asset.nama_komoditas }}</span>
-              <span class="asset-item-badge">{{ asset.pilar_kategori }}</span>
+              <span class="asset-item-badge">{{ pillarDetails[asset.pilar_kategori]?.badge || 'Aset' }}</span>
             </div>
             <button type="button" class="btn-remove-asset" @click="removeAsset(idx)">
               Hapus ✕

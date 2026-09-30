@@ -34,7 +34,7 @@ defineEmits<{
       <!-- Progress Kesiapan Lingkungan -->
       <div class="readiness-box">
         <div class="readiness-header">
-          <span>Kesiapan Lingkungan RT</span>
+          <span>Kesiapan Komunitas</span>
           <span>{{ feature.currentCount }} / {{ feature.targetCount }} {{ feature.targetUnit }}</span>
         </div>
         <div class="readiness-track">

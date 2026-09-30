@@ -1,20 +1,26 @@
 /**
  * ============================================================================
- * PEKARANGAN - BACKEND GOOGLE APPS SCRIPT (GAS) v2.0
+ * PEKARANGAN - BACKEND GOOGLE APPS SCRIPT (GAS) v2.1
  * ============================================================================
  * Backend Web App untuk aplikasi kedaulatan pangan Pekarangan tingkat RT/Komunitas.
  * Mengintegrasikan Google Sheets sebagai database relasional flat-sheet
  * dan Google Drive untuk penyimpanan foto lahan terstruktur.
  *
  * Mendukung sinkronisasi 2 arah:
- * - tbl_anggota (Identitas Warga)
- * - tbl_pekarangan (Profil & Karakteristik Lahan)
- * - tbl_aset_produksi (4 Pilar Aset Pekarangan)
- * - tbl_tanaman (Jurnal & Pemantauan Tanaman Aktif)
- * - tbl_ternak (Inventaris & Kelompok Ternak Produktif)
- * - tbl_log_aktivitas (Catatan Harian Panen, Rawat, Tanam, Telur)
- * - tbl_buku_kas (Rekor Penghematan Belanja Dapur Riil)
+ * - tbl_anggota        (Identitas Warga)
+ * - tbl_pekarangan     (Profil & Karakteristik Lahan)
+ * - tbl_aset_produksi  (4 Pilar Aset Pekarangan)
+ * - tbl_tanaman        (Jurnal & Pemantauan Tanaman Aktif)
+ * - tbl_ternak         (Inventaris & Kelompok Ternak Produktif)
+ * - tbl_log_aktivitas  (Catatan Harian Panen, Rawat, Tanam, Telur)
+ * - tbl_penghematan    (Rekor Penghematan Belanja Dapur Riil — qty, harga satuan)
  * - tbl_master_options (Daftar Pilihan Dinamis / Dropdown Tambah Baru)
+ *
+ * Changelog v2.1:
+ * - handleBatchSync: mendukung semua action type (bukan hanya survei)
+ * - handleLogHarvest: menyimpan plantId & alokasi panen
+ * - handleLogConsume: menyimpan qty & pricePerUnit
+ * - tbl_penghematan: tambah kolom qty & price_per_unit
  */
 
 const CONFIG = {
@@ -364,24 +370,32 @@ function handleLogHarvest(ss, harvest) {
     `Panen ${harvest.plantName || "Sayur"} (${harvest.qty || "-"})`,
     "panen",
     "Hari ini",
-    harvest.note || "Panen pekarangan"
+    [
+      harvest.note || "Panen pekarangan",
+      harvest.allocation ? `Alokasi: ${harvest.allocation}` : "",
+      harvest.plantId ? `ID: ${harvest.plantId}` : ""
+    ].filter(Boolean).join(" • ")
   ]);
 
   return jsonResponse({ status: "success" });
 }
 
 function handleLogConsume(ss, consume) {
-  const sheetKas = ss.getSheetByName("tbl_buku_kas");
-  const savedVal = Number(consume.savedValue) || (Number(consume.qty) * Number(consume.pricePerUnit));
+  const sheetPenghematan = ss.getSheetByName("tbl_penghematan");
+  const qty = Number(consume.qty) || 1;
+  const pricePerUnit = Number(consume.pricePerUnit) || 0;
+  const savedVal = Number(consume.savedValue) || (qty * pricePerUnit);
   const now = new Date();
 
-  sheetKas.appendRow([
-    "KAS-" + Date.now(),
+  sheetPenghematan.appendRow([
+    "HEMAT-" + Date.now(),
     now,
     consume.item || "",
     consume.meal || "🍳 Sarapan Pagi",
     consume.note || "",
     "Hari ini",
+    qty,
+    pricePerUnit,
     savedVal
   ]);
 
@@ -390,9 +404,9 @@ function handleLogConsume(ss, consume) {
     "LOG-" + Date.now(),
     now,
     `Konsumsi Mandiri: ${consume.item}`,
-    "panen",
+    "konsumsi",
     "Hari ini",
-    `${consume.meal} • Hemat Rp ${savedVal.toLocaleString()}`
+    `${consume.meal} • ${qty} × Rp${pricePerUnit.toLocaleString()} = Hemat Rp ${savedVal.toLocaleString()}`
   ]);
 
   return jsonResponse({ status: "success", saved_value: savedVal });
@@ -411,13 +425,45 @@ function handleAddOption(ss, category, value, extra) {
 
 function handleBatchSync(ss, items) {
   let count = 0;
+  const errors = [];
+
   items.forEach(item => {
-    if (item.member_data && item.yard_data) {
-      handleSurveySubmission(ss, item);
+    try {
+      // Survei pendataan lahan
+      if (item.member_data && item.yard_data) {
+        handleSurveySubmission(ss, item);
+        count++;
+        return;
+      }
+
+      // Semua action type dari antrian offline
+      const action = item.action;
+      if (action === "save_plant") {
+        handleSavePlant(ss, item.plant);
+      } else if (action === "update_plant_phase") {
+        handleUpdatePlantPhase(ss, item.plantId, item.phase, item.progressPercent);
+      } else if (action === "save_livestock") {
+        handleSaveLivestock(ss, item.livestock);
+      } else if (action === "log_egg") {
+        handleLogEgg(ss, item.livestockId, item.count, item.note);
+      } else if (action === "log_harvest") {
+        handleLogHarvest(ss, item.harvest);
+      } else if (action === "log_consume") {
+        handleLogConsume(ss, item.consume);
+      } else if (action === "add_option") {
+        handleAddOption(ss, item.category, item.value, item.extra);
+      }
       count++;
+    } catch (e) {
+      errors.push({ item: item.action || "survei", error: e.toString() });
     }
   });
-  return jsonResponse({ status: "success", synced_count: count });
+
+  return jsonResponse({
+    status: errors.length === 0 ? "success" : "partial",
+    synced_count: count,
+    errors: errors
+  });
 }
 
 // ============================================================================
@@ -432,7 +478,7 @@ function fetchAllDatabase(ss) {
     plants: readSheetToObjects(ss, "tbl_tanaman"),
     livestocks: readSheetToObjects(ss, "tbl_ternak"),
     activityLogs: readSheetToObjects(ss, "tbl_log_aktivitas"),
-    kasLogs: readSheetToObjects(ss, "tbl_buku_kas"),
+    penghematanLogs: readSheetToObjects(ss, "tbl_penghematan"),
     masterOptions: readSheetToObjects(ss, "tbl_master_options")
   };
   return result;
@@ -460,25 +506,27 @@ function readSheetToObjects(ss, sheetName) {
 function computeStats(ss) {
   const sheetAnggota = ss.getSheetByName("tbl_anggota");
   const sheetTanaman = ss.getSheetByName("tbl_tanaman");
-  const sheetKas = ss.getSheetByName("tbl_buku_kas");
+  const sheetPenghematan = ss.getSheetByName("tbl_penghematan");
 
   const totalMembers = sheetAnggota ? Math.max(0, sheetAnggota.getLastRow() - 1) : 0;
   const totalPlants = sheetTanaman ? Math.max(0, sheetTanaman.getLastRow() - 1) : 0;
 
-  let totalKasHemat = 0;
-  if (sheetKas && sheetKas.getLastRow() > 1) {
-    const kasValues = sheetKas.getRange(2, 7, sheetKas.getLastRow() - 1, 1).getValues();
-    kasValues.forEach(r => {
-      totalKasHemat += Number(r[0]) || 0;
+  let totalPenghematan = 0;
+  if (sheetPenghematan && sheetPenghematan.getLastRow() > 1) {
+    // Col 9: savedValue (id, timestamp, item, meal, note, date, qty, price_per_unit, savedValue)
+    const pengValues = sheetPenghematan.getRange(2, 9, sheetPenghematan.getLastRow() - 1, 1).getValues();
+    pengValues.forEach(r => {
+      totalPenghematan += Number(r[0]) || 0;
     });
   }
 
   return {
     total_members: totalMembers,
     total_plants: totalPlants,
-    total_kas_hemat: totalKasHemat
+    total_penghematan: totalPenghematan
   };
 }
+
 
 // ============================================================================
 // HELPER & SCHEMA CREATOR
@@ -571,8 +619,8 @@ function initDatabaseSheets(spreadsheetInstance) {
       headerBg: "#0369a1"
     },
     {
-      name: "tbl_buku_kas",
-      headers: ["id", "timestamp", "item", "meal", "note", "date", "savedValue"],
+      name: "tbl_penghematan",
+      headers: ["id", "timestamp", "item", "meal", "note", "date", "qty", "price_per_unit", "savedValue"],
       headerBg: "#047857"
     },
     {

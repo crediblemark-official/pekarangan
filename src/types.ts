@@ -15,6 +15,21 @@ export interface MemberData {
   status_verifikasi: "DRAFT" | "VERIFIED";
 }
 
+export interface CommunityMemberItem {
+  id: string;
+  name: string;
+  phone: string;
+  rtRw: string;
+  statusLahan: string;
+  estimasiLuas: string;
+  zonasi: string[];
+  komoditas: { name: string; icon: string; category?: string }[];
+  joinedDate: string;
+  bio: string;
+  yardName?: string;
+  isDeviceOwner?: boolean;
+}
+
 export type StatusLahan = "Milik Sendiri" | "Sewa/Kontrak" | "Lahan Tidur/Fasum";
 export type EstimasiLuas = "<10 m²" | "10-30 m²" | "30-50 m²" | ">50 m²";
 export type PaparanSinar = "Penuh (>6 jam)" | "Sebagian (3-6 jam)" | "Teduh (<3 jam)";
@@ -73,11 +88,19 @@ export interface SurveyPayload {
 export interface AppSettings {
   gasUrl: string;
   defaultRtRw: string;
-  cadreName: string;
+  cadreName?: string;
+  ownerName: string; // Nama Pemilik / Keluarga (Milik Siapa)
+  yardName: string; // Nama Pekarangan (Objek/Apa)
+  phone: string; // Nomor WhatsApp Kontak
+  addressDetail: string; // Alamat / No. Rumah
+  landStatus: string; // Status Lahan (Milik Sendiri / Sewa)
+  landArea: string; // Estimasi Luas Lahan
   theme: "dark" | "light";
+  isBiometricLockEnabled?: boolean;
+  deviceId?: string;
 }
 
-export type SyncOperationType = 'survey' | 'plant' | 'update_phase' | 'egg_log' | 'harvest' | 'consume' | 'option';
+export type SyncOperationType = 'survey' | 'plant' | 'livestock' | 'update_phase' | 'egg_log' | 'harvest' | 'consume' | 'option';
 
 export interface SyncQueueItem {
   queueId: string;
@@ -118,12 +141,15 @@ export interface PlantItem {
   variety: string;
   location: string;
   qty: string;
-  plantedDate: string;
+  plantedDate: string; // ISO YYYY-MM-DD or readable string
+  plantedTimestamp?: number;
   hst: number;
   targetHst: number;
   phase: string;
   icon: string;
   progressPercent: number;
+  isHarvested?: boolean;
+  ownerDeviceId?: string;
 }
 
 export interface LivestockItem {
@@ -134,8 +160,23 @@ export interface LivestockItem {
   housing: string;
   todayYield: number;
   weekYield: number;
+  lastYieldDate?: string; // YYYY-MM-DD for daily automatic reset
   icon: string;
   note: string;
+  ownerDeviceId?: string;
+}
+
+export interface HarvestRecordItem {
+  id: string;
+  plantId: string;
+  plantName: string;
+  qty: string;
+  unit: string;
+  estimatedValue: number;
+  allocation: 'konsumsi' | 'sedekah' | 'barter';
+  date: string;
+  note: string;
+  ownerDeviceId?: string;
 }
 
 export interface ActivityLogItem {
@@ -144,6 +185,8 @@ export interface ActivityLogItem {
   type: 'panen' | 'ternak' | 'rawat' | 'tanam';
   date: string;
   note: string;
+  value?: number;
+  ownerDeviceId?: string;
 }
 
 export interface KasLogItem {
@@ -153,6 +196,9 @@ export interface KasLogItem {
   note: string;
   date: string;
   savedValue: number;
+  qty?: number;
+  pricePerUnit?: number;
+  ownerDeviceId?: string;
 }
 
 export interface MasterOptions {
