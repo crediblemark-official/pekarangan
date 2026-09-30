@@ -24,8 +24,11 @@
  */
 
 const CONFIG = {
-  SPREADSHEET_ID: "", // Isi jika script standalone; biarkan kosong jika bound to spreadsheet
-  ROOT_FOLDER_NAME: "Pekarangan_DB"
+  // ID Spreadsheet Database Pekarangan
+  SPREADSHEET_ID: "1fCkUEfRBte8FSxrEXF0I3T9t0oNHn-SiUFkrLE0Y5yU",
+  // ID Folder Google Drive untuk Penyimpanan Foto Lahan Pekarangan
+  DRIVE_FOLDER_ID: "1kF4E-YXOKp7Gi-cBVof7ZP03mofuWTMH",
+  ROOT_FOLDER_NAME: "MEDIA"
 };
 
 function doGet(e) {
@@ -546,7 +549,7 @@ function savePhotoToDrive({ rtRw, memberId, base64Data }) {
   const fileName = `PEKARANGAN_${memberId}_${Utilities.formatDate(new Date(), "Asia/Jakarta", "yyyyMMdd_HHmmss")}.jpg`;
   const blob = Utilities.newBlob(decodedBytes, mimeType, fileName);
 
-  const rootFolder = getOrCreateFolder(DriveApp.getRootFolder(), CONFIG.ROOT_FOLDER_NAME);
+  const rootFolder = getRootDriveFolder();
   const safeRtRw = "RT_RW_" + (rtRw || "Umum").replace(/[^a-zA-Z0-9_-]/g, "_");
   const rtFolder = getOrCreateFolder(rootFolder, safeRtRw);
   const memberFolder = getOrCreateFolder(rtFolder, memberId);
@@ -559,6 +562,21 @@ function savePhotoToDrive({ rtRw, memberId, base64Data }) {
   }
 
   return file.getUrl();
+}
+
+function getRootDriveFolder() {
+  const propId = PropertiesService.getScriptProperties().getProperty("DRIVE_FOLDER_ID");
+  const targetId = propId || CONFIG.DRIVE_FOLDER_ID;
+
+  if (targetId && targetId.trim() !== "") {
+    try {
+      return DriveApp.getFolderById(targetId.trim());
+    } catch (e) {
+      Logger.log("Gagal mengakses DRIVE_FOLDER_ID (" + targetId + "), fallback: " + e.toString());
+    }
+  }
+
+  return getOrCreateFolder(DriveApp.getRootFolder(), CONFIG.ROOT_FOLDER_NAME);
 }
 
 function getOrCreateFolder(parentFolder, folderName) {
