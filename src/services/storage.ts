@@ -84,7 +84,7 @@ export const StorageService = {
       if (data) {
         const parsed = JSON.parse(data);
         return {
-          gasUrl: parsed.gasUrl || (import.meta.env.VITE_GAS_URL as string) || '',
+          gasUrl: (import.meta.env.VITE_GAS_URL as string) || parsed.gasUrl || '',
           defaultRtRw: parsed.defaultRtRw || '',
           cadreName: parsed.cadreName || '',
           ownerName: parsed.ownerName || parsed.cadreName || '',

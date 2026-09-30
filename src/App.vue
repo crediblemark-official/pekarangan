@@ -87,8 +87,8 @@ const addSedekahLog = (log: SedekahLog) => {
   sedekahLogs.value.unshift(log);
 };
 
-// Google Apps Script Web App URL from Settings or .env.local
-const GAS_URL = StorageService.getSettings().gasUrl || (import.meta.env.VITE_GAS_URL as string) || '';
+// Google Apps Script Web App URL from .env / .env.local
+const GAS_URL = (import.meta.env.VITE_GAS_URL as string) || StorageService.getSettings().gasUrl || '';
 
 // Toast Notification
 const toast = reactive({
