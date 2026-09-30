@@ -648,13 +648,25 @@ function initDatabaseSheets(spreadsheetInstance) {
     }
   ];
 
+  const allSheets = ss.getSheets();
+  const sheetMap = {};
+  allSheets.forEach(s => {
+    sheetMap[s.getName().trim().toLowerCase()] = s;
+  });
+
   schemas.forEach(schema => {
-    let sheet = ss.getSheetByName(schema.name);
+    const key = schema.name.trim().toLowerCase();
+    let sheet = sheetMap[key] || ss.getSheetByName(schema.name);
     if (!sheet) {
-      sheet = ss.insertSheet(schema.name);
+      try {
+        sheet = ss.insertSheet(schema.name);
+        sheetMap[key] = sheet;
+      } catch (err) {
+        sheet = ss.getSheets().find(s => s.getName().trim().toLowerCase() === key);
+      }
     }
 
-    if (sheet.getLastRow() === 0) {
+    if (sheet && sheet.getLastRow() === 0) {
       sheet.appendRow(schema.headers);
       const headerRange = sheet.getRange(1, 1, 1, schema.headers.length);
       headerRange.setFontWeight("bold");
