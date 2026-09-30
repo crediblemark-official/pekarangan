@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { StorageService } from '../services/storage';
-import { ApiService } from '../services/api';
+import { ApiService, getEffectiveGasUrl } from '../services/api';
 import { SecurityService } from '../services/security';
 import type { AppSettings } from '../types';
 
@@ -69,6 +69,8 @@ const saveProfile = () => {
   // Sinkronkan juga ke direktori anggota agar nama pemilik dan pekarangan langsung terbarui
   const members = StorageService.getMembers();
   const ownerIdx = members.findIndex(m => m.isDeviceOwner || m.phone === settings.phone);
+  const memberId = (ownerIdx !== -1 && members[ownerIdx].id) ? members[ownerIdx].id : 'MBR-' + Date.now().toString().slice(-6);
+
   if (ownerIdx !== -1) {
     members[ownerIdx].name = settings.ownerName;
     members[ownerIdx].yardName = settings.yardName;
@@ -78,6 +80,42 @@ const saveProfile = () => {
     members[ownerIdx].estimasiLuas = settings.landArea;
     members[ownerIdx].isDeviceOwner = true;
     StorageService.saveMembers(members);
+  }
+
+  // Kirim data profil pemilik akun & device binding ke Google Apps Script / Google Sheets
+  if (settings.ownerName && settings.ownerName.trim()) {
+    const accountPayload = {
+      member_id: memberId,
+      nama_lengkap: settings.ownerName.trim(),
+      nama_panggilan: settings.ownerName.trim().split(' ')[0] || settings.ownerName.trim(),
+      nomor_wa: settings.phone.trim() || '-',
+      rt_rw: settings.defaultRtRw.trim() || '01/02',
+      alamat_catatan: settings.addressDetail.trim() || '-',
+      device_id: deviceId.value
+    };
+
+    const gasUrl = getEffectiveGasUrl();
+    if (gasUrl && navigator.onLine) {
+      ApiService.registerAccount(gasUrl, accountPayload).then((res) => {
+        if (res.member_id && ownerIdx !== -1) {
+          members[ownerIdx].id = res.member_id;
+          StorageService.saveMembers(members);
+        }
+      }).catch((err) => {
+        console.warn('Gagal sync profile langsung ke GAS:', err);
+        StorageService.addToSyncQueue(
+          { action: 'register_account', account: accountPayload },
+          'register_account',
+          `👤 Akun: ${settings.ownerName}`
+        );
+      });
+    } else {
+      StorageService.addToSyncQueue(
+        { action: 'register_account', account: accountPayload },
+        'register_account',
+        `👤 Akun: ${settings.ownerName}`
+      );
+    }
   }
 
   isFormLocked.value = true; // Kunci otomatis setelah disimpan!
@@ -129,7 +167,7 @@ const syncCloudData = async () => {
     emit('showToast', 'Sedang offline. Hubungkan internet untuk sinkronisasi.', 'warning');
     return;
   }
-  const gasUrl = (import.meta.env.VITE_GAS_URL as string) || settings.gasUrl;
+  const gasUrl = getEffectiveGasUrl();
   if (!gasUrl) {
     emit('showToast', 'URL Google Apps Script belum dikonfigurasi di environment.', 'warning');
     return;
@@ -137,6 +175,21 @@ const syncCloudData = async () => {
 
   isSyncingData.value = true;
   try {
+    // 1. Jika pengguna memiliki profil lokal yang belum ada di cloud, tautkan ke Google Sheets!
+    if (settings.ownerName && settings.ownerName.trim()) {
+      const accountPayload = {
+        member_id: 'MBR-' + Date.now().toString().slice(-6),
+        nama_lengkap: settings.ownerName.trim(),
+        nama_panggilan: settings.ownerName.trim().split(' ')[0] || settings.ownerName.trim(),
+        nomor_wa: settings.phone.trim() || '-',
+        rt_rw: settings.defaultRtRw.trim() || '01/02',
+        alamat_catatan: settings.addressDetail.trim() || '-',
+        device_id: deviceId.value
+      };
+      await ApiService.registerAccount(gasUrl, accountPayload).catch(() => {});
+    }
+
+    // 2. Tarik seluruh data terbaru dari Google Sheets
     const cloudData = await ApiService.fetchAllData(gasUrl);
     if (cloudData) {
       if (cloudData.members && cloudData.members.length > 0) {
@@ -159,7 +212,7 @@ const syncCloudData = async () => {
     totalSavings.value = StorageService.getTotalSavings();
     queueCount.value = StorageService.getSyncQueue().length;
 
-    emit('showToast', 'Sinkronisasi berhasil! Data lokal diperbarui dari Cloud.', 'success');
+    emit('showToast', 'Sinkronisasi berhasil! Data terhubung dengan Google Sheets.', 'success');
   } catch (err: any) {
     emit('showToast', 'Gagal sinkronisasi: ' + err.message, 'error');
   } finally {

@@ -52,6 +52,12 @@ function doGet(e) {
       });
     }
 
+    if (action === "lookup_account") {
+      const phone = (e && e.parameter && (e.parameter.phone || e.parameter.nomor_wa)) || "";
+      const deviceId = (e && e.parameter && e.parameter.device_id) || "";
+      return handleLookupAccount(ss, { phone: phone, device_id: deviceId });
+    }
+
     if (action === "get_all" || action === "get_data") {
       const data = fetchAllDatabase(ss);
       return jsonResponse({
@@ -102,12 +108,21 @@ function doPost(e) {
     const ss = getSpreadsheet();
     initDatabaseSheets(ss);
 
-    // 1. SURVEI PROFIL LAHAN (FASE 1)
+    // 1. PENDAFTARAN & PEMULIHAN AKUN (DEVICE BINDING)
+    if (payload.action === "register_account") {
+      return handleRegisterAccount(ss, payload);
+    }
+
+    if (payload.action === "lookup_account") {
+      return handleLookupAccount(ss, payload);
+    }
+
+    // 2. SURVEI PROFIL LAHAN (FASE 1)
     if (payload.member_data && payload.yard_data) {
       return handleSurveySubmission(ss, payload);
     }
 
-    // 2. AKSI-AKSI PENCATATAN HARIAN & DATABASE
+    // 3. AKSI-AKSI PENCATATAN HARIAN & DATABASE
     const action = payload.action;
 
     if (action === "save_plant") {
@@ -162,14 +177,217 @@ function doPost(e) {
 // HANDLER FUNGSI-FUNGSI BISNIS
 // ============================================================================
 
+function handleRegisterAccount(ss, payload) {
+  const account = payload.account || payload;
+  const namaLengkap = (account.nama_lengkap || "").trim();
+  const nomorWa = cleanPhoneNumber(account.nomor_wa || "");
+  const rtRw = (account.rt_rw || "").trim();
+  const alamat = (account.alamat_catatan || "").trim();
+  const deviceId = (account.device_id || "").trim();
+  const forceTakeover = !!(account.force_takeover || payload.force_takeover);
+
+  if (!namaLengkap) {
+    throw new Error("Nama lengkap wajib diisi untuk pendaftaran akun.");
+  }
+  if (!nomorWa) {
+    throw new Error("Nomor WhatsApp wajib diisi sebagai identitas akun.");
+  }
+
+  const sheetAnggota = ss.getSheetByName("tbl_anggota");
+  const data = sheetAnggota.getDataRange().getValues();
+
+  let existingRow = -1;
+  let existingMember = null;
+
+  for (let i = 1; i < data.length; i++) {
+    const rowWa = cleanPhoneNumber(data[i][4]);
+    if (rowWa && rowWa === nomorWa) {
+      existingRow = i + 1; // 1-indexed row number
+      existingMember = {
+        member_id: String(data[i][0] || ""),
+        nama_lengkap: String(data[i][2] || ""),
+        nama_panggilan: String(data[i][3] || ""),
+        nomor_wa: String(data[i][4] || ""),
+        rt_rw: String(data[i][5] || ""),
+        alamat_catatan: String(data[i][6] || ""),
+        status_verifikasi: String(data[i][8] || "VERIFIED"),
+        device_id: String(data[i][9] || ""),
+        status_sesi: String(data[i][10] || "AKTIF"),
+        last_active: String(data[i][11] || "")
+      };
+      break;
+    }
+  }
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const allData = fetchAllDatabase(ss);
+
+  if (existingRow !== -1 && existingMember) {
+    const prevDevice = existingMember.device_id;
+
+    // KEBIJAKAN 1 HP: Jika akun sedang aktif di HP lain dan belum disetujui takeover:
+    if (prevDevice && prevDevice !== deviceId && !forceTakeover) {
+      return jsonResponse({
+        status: "conflict",
+        message: "Akun ini sedang aktif di perangkat lain. Kebijakan sistem: 1 akun hanya boleh aktif di 1 HP.",
+        isOtherDeviceActive: true,
+        existing_device_id: prevDevice,
+        member: existingMember
+      });
+    }
+
+    // Pindahkan / aktifkan sesi di perangkat baru ini
+    if (deviceId) {
+      sheetAnggota.getRange(existingRow, 10).setValue(deviceId);
+      existingMember.device_id = deviceId;
+    }
+    // Kolom 11: status_sesi = AKTIF
+    sheetAnggota.getRange(existingRow, 11).setValue("AKTIF");
+    existingMember.status_sesi = "AKTIF";
+    // Kolom 12: last_active
+    sheetAnggota.getRange(existingRow, 12).setValue(nowIso);
+    existingMember.last_active = nowIso;
+
+    if (namaLengkap) {
+      sheetAnggota.getRange(existingRow, 3).setValue(namaLengkap);
+      existingMember.nama_lengkap = namaLengkap;
+    }
+    if (rtRw && rtRw !== "-") {
+      sheetAnggota.getRange(existingRow, 6).setValue("'" + rtRw);
+      existingMember.rt_rw = rtRw;
+    }
+    if (alamat && alamat !== "-") {
+      sheetAnggota.getRange(existingRow, 7).setValue(alamat);
+      existingMember.alamat_catatan = alamat;
+    }
+
+    const memberYards = (allData.yards || []).filter(y => y.member_id === existingMember.member_id);
+
+    return jsonResponse({
+      status: "success",
+      message: forceTakeover 
+        ? "Sesi berhasil dipindahkan ke perangkat ini! Perangkat lama telah dinonaktifkan."
+        : "Akun aktif pada perangkat ini.",
+      isExisting: true,
+      member: existingMember,
+      yards: memberYards
+    });
+  }
+
+  // Akun baru
+  const todayStr = getFormattedDateCompact();
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  const memberId = account.member_id || `MBR-${todayStr}-${randomSuffix}`;
+
+  sheetAnggota.appendRow([
+    memberId,
+    now,
+    namaLengkap,
+    account.nama_panggilan || namaLengkap.split(" ")[0] || namaLengkap,
+    "'" + nomorWa,
+    "'" + (rtRw || "-"),
+    alamat || "-",
+    account.gps_lat_long || "",
+    "VERIFIED",
+    deviceId,
+    "AKTIF",
+    nowIso
+  ]);
+
+  return jsonResponse({
+    status: "success",
+    message: "Akun baru berhasil didaftarkan dan aktif!",
+    isExisting: false,
+    member: {
+      member_id: memberId,
+      nama_lengkap: namaLengkap,
+      nomor_wa: nomorWa,
+      rt_rw: rtRw || "-",
+      alamat_catatan: alamat || "-",
+      device_id: deviceId,
+      status_sesi: "AKTIF",
+      last_active: nowIso
+    },
+    yards: []
+  });
+}
+
+function handleLookupAccount(ss, payloadOrQuery) {
+  const phone = cleanPhoneNumber(payloadOrQuery.phone || payloadOrQuery.nomor_wa || "");
+  const deviceId = String(payloadOrQuery.device_id || "").trim();
+
+  if (!phone && !deviceId) {
+    return jsonResponse({
+      status: "error",
+      message: "Nomor WhatsApp atau Device ID harus disediakan."
+    }, 400);
+  }
+
+  const sheetAnggota = ss.getSheetByName("tbl_anggota");
+  if (!sheetAnggota || sheetAnggota.getLastRow() < 2) {
+    return jsonResponse({
+      status: "success",
+      found: false,
+      message: "Belum ada akun terdaftar."
+    });
+  }
+
+  const data = sheetAnggota.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const rowWa = cleanPhoneNumber(data[i][4]);
+    const rowDev = String(data[i][9] || "").trim();
+
+    const matchPhone = phone && rowWa === phone;
+    const matchDevice = deviceId && rowDev === deviceId;
+
+    if (matchPhone || matchDevice) {
+      const isOtherDevice = deviceId && rowDev && rowDev !== deviceId;
+      const member = {
+        member_id: String(data[i][0] || ""),
+        nama_lengkap: String(data[i][2] || ""),
+        nama_panggilan: String(data[i][3] || ""),
+        nomor_wa: String(data[i][4] || ""),
+        rt_rw: String(data[i][5] || ""),
+        alamat_catatan: String(data[i][6] || ""),
+        status_verifikasi: String(data[i][8] || "VERIFIED"),
+        device_id: rowDev,
+        status_sesi: String(data[i][10] || "AKTIF"),
+        last_active: String(data[i][11] || "")
+      };
+
+      const allData = fetchAllDatabase(ss);
+      const memberYards = (allData.yards || []).filter(y => y.member_id === member.member_id);
+
+      return jsonResponse({
+        status: "success",
+        found: true,
+        isOtherDeviceActive: isOtherDevice,
+        member: member,
+        yards: memberYards
+      });
+    }
+  }
+
+  return jsonResponse({
+    status: "success",
+    found: false,
+    message: "Akun belum terdaftar."
+  });
+}
+
 function handleSurveySubmission(ss, payload) {
   const memberData = payload.member_data || {};
   const yardData = payload.yard_data || {};
   const assetsData = payload.assets_data || [];
   const imageBase64 = payload.image_base64 || "";
 
-  if (!memberData.nama_lengkap || !memberData.nomor_wa) {
-    throw new Error("Nama lengkap dan nomor WhatsApp wajib diisi.");
+  if (!memberData.nama_lengkap || memberData.nama_lengkap.trim() === "") {
+    throw new Error("Nama lengkap wajib diisi.");
+  }
+  if (!memberData.nomor_wa || memberData.nomor_wa.trim() === "") {
+    memberData.nomor_wa = "-";
   }
 
   const todayStr = getFormattedDateCompact();
@@ -203,10 +421,11 @@ function handleSurveySubmission(ss, payload) {
     memberData.nama_lengkap || "",
     memberData.nama_panggilan || "",
     "'" + cleanPhoneNumber(memberData.nomor_wa || ""),
-    memberData.rt_rw || "",
+    "'" + (memberData.rt_rw || ""),
     memberData.alamat_catatan || "",
     memberData.gps_lat_long || "",
-    memberData.status_verifikasi || "VERIFIED"
+    memberData.status_verifikasi || "VERIFIED",
+    memberData.device_id || ""
   ]);
 
   // Sheet 2: tbl_pekarangan
@@ -608,7 +827,7 @@ function initDatabaseSheets(spreadsheetInstance) {
   const schemas = [
     {
       name: "tbl_anggota",
-      headers: ["member_id", "timestamp", "nama_lengkap", "nama_panggilan", "nomor_wa", "rt_rw", "alamat_catatan", "gps_lat_long", "status_verifikasi"],
+      headers: ["member_id", "timestamp", "nama_lengkap", "nama_panggilan", "nomor_wa", "rt_rw", "alamat_catatan", "gps_lat_long", "status_verifikasi", "device_id", "status_sesi", "last_active"],
       headerBg: "#2d6a4f"
     },
     {
@@ -674,6 +893,19 @@ function initDatabaseSheets(spreadsheetInstance) {
       headerRange.setBackground(schema.headerBg);
       headerRange.setHorizontalAlignment("center");
       sheet.setFrozenRows(1);
+    } else if (sheet && sheet.getLastRow() >= 1) {
+      // Periksa dan lengkapi kolom header baru jika sheet lama belum memilikinya
+      const lastCol = sheet.getLastColumn();
+      if (lastCol < schema.headers.length) {
+        for (let c = lastCol; c < schema.headers.length; c++) {
+          const cell = sheet.getRange(1, c + 1);
+          cell.setValue(schema.headers[c]);
+          cell.setFontWeight("bold");
+          cell.setFontColor("#ffffff");
+          cell.setBackground(schema.headerBg);
+          cell.setHorizontalAlignment("center");
+        }
+      }
     }
   });
 

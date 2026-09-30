@@ -16,6 +16,7 @@ import type {
   MasterOptions,
   CommunityMemberItem
 } from "../types";
+import { getEffectiveGasUrl } from "./api";
 
 /**
  * Storage key version:
@@ -111,7 +112,7 @@ export const StorageService = {
         }
 
         return {
-          gasUrl: (import.meta.env.VITE_GAS_URL as string) || parsed.gasUrl || '',
+          gasUrl: getEffectiveGasUrl(),
           defaultRtRw: rt,
           cadreName: owner,
           ownerName: owner,
@@ -129,7 +130,7 @@ export const StorageService = {
       console.warn('Error reading settings', e);
     }
     return {
-      gasUrl: (import.meta.env.VITE_GAS_URL as string) || '',
+      gasUrl: getEffectiveGasUrl(),
       defaultRtRw: '',
       cadreName: '',
       ownerName: '',

@@ -4,7 +4,7 @@ import type { MemberData, YardData, AssetItem, SurveyPayload, SyncQueueItem, Sed
 import { GeoService, type GeoLocationResult } from './services/geo';
 import { CameraService, type CompressionResult } from './services/camera';
 import { StorageService } from './services/storage';
-import { ApiService } from './services/api';
+import { ApiService, getEffectiveGasUrl } from './services/api';
 
 // Navigation & Screen Components
 import AppBottomNav, { type AppNavTab } from './components/AppBottomNav.vue';
@@ -87,8 +87,8 @@ const addSedekahLog = (log: SedekahLog) => {
   sedekahLogs.value.unshift(log);
 };
 
-// Google Apps Script Web App URL from .env / .env.local
-const GAS_URL = (import.meta.env.VITE_GAS_URL as string) || StorageService.getSettings().gasUrl || '';
+// Google Apps Script Web App URL from environment
+const GAS_URL = getEffectiveGasUrl();
 
 // Toast Notification
 const toast = reactive({
@@ -272,6 +272,8 @@ const processSyncItem = async (item: SyncQueueItem) => {
   if (type === 'survey') {
     await ApiService.submitSurvey(GAS_URL, item.payload);
     StorageService.incrementRecordedMembersCount();
+  } else if (type === 'register_account' || item.payload?.action === 'register_account') {
+    await ApiService.registerAccount(GAS_URL, item.payload.account || item.payload);
   } else if (type === 'plant') {
     await ApiService.savePlant(GAS_URL, item.payload);
   } else if (type === 'livestock') {
@@ -347,6 +349,10 @@ onMounted(() => {
 
   // Cloud sync from Google Sheets database
   if (isOnline.value) {
+    if (StorageService.getSyncQueue().length > 0) {
+      syncAllQueue();
+    }
+
     ApiService.fetchAllData(GAS_URL).then((cloudData) => {
       if (cloudData) {
         if (cloudData.members && cloudData.members.length > 0) {
@@ -364,13 +370,28 @@ onMounted(() => {
         if (cloudData.penghematanLogs && cloudData.penghematanLogs.length > 0) {
           StorageService.savePengematanLogs(cloudData.penghematanLogs);
         }
+
+        // Single Device Session Check: jika akun telah diambil alih oleh HP lain
+        const currentPhone = StorageService.getSettings().phone?.replace(/\D/g, '');
+        const currentDevId = SecurityService.getDeviceId();
+        if (currentPhone && cloudData.members && cloudData.members.length > 0) {
+          const myCloudProfile = cloudData.members.find((m: any) => 
+            String(m.nomor_wa || '').replace(/\D/g, '') === currentPhone
+          );
+          if (myCloudProfile && myCloudProfile.device_id && myCloudProfile.device_id !== currentDevId) {
+            showToast('⚠️ Sesi akun ini telah dipindahkan ke HP lain.', 'warning');
+          }
+        }
       }
     }).catch(() => {});
   }
 
   window.addEventListener('online', () => {
     isOnline.value = true;
-    showToast('Koneksi internet pulih. Anda dapat menyinkronkan data.');
+    showToast('Koneksi internet pulih. Menyinkronkan antrean...');
+    if (StorageService.getSyncQueue().length > 0) {
+      syncAllQueue();
+    }
   });
 
   window.addEventListener('offline', () => {

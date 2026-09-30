@@ -100,7 +100,7 @@ export interface AppSettings {
   deviceId?: string;
 }
 
-export type SyncOperationType = 'survey' | 'plant' | 'livestock' | 'update_phase' | 'egg_log' | 'harvest' | 'consume' | 'option';
+export type SyncOperationType = 'survey' | 'plant' | 'livestock' | 'update_phase' | 'egg_log' | 'harvest' | 'consume' | 'option' | 'register_account';
 
 export interface SyncQueueItem {
   queueId: string;

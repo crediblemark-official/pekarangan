@@ -14,6 +14,17 @@ export interface ApiResponse {
   drive_photo_url?: string;
   assets_count?: number;
   data?: any;
+  found?: boolean;
+  member?: any;
+  isExisting?: boolean;
+  isOtherDeviceActive?: boolean;
+  yards?: any[];
+  plants?: any[];
+}
+
+export function getEffectiveGasUrl(): string {
+  const envUrl = (import.meta.env.VITE_GAS_URL as string) || '';
+  return envUrl.trim();
 }
 
 export const ApiService = {
@@ -105,6 +116,39 @@ export const ApiService = {
     }
 
     return data;
+  },
+
+  /**
+   * Pendaftaran akun pemilik & device binding (Onboarding)
+   */
+  async registerAccount(
+    gasUrl: string,
+    account: {
+      nama_lengkap: string;
+      nomor_wa: string;
+      rt_rw?: string;
+      alamat_catatan?: string;
+      device_id: string;
+      force_takeover?: boolean;
+    }
+  ): Promise<ApiResponse> {
+    return this.postToGas(gasUrl, {
+      action: "register_account",
+      account
+    });
+  },
+
+  /**
+   * Cari akun berdasarkan nomor WA atau Device ID (Ganti HP / Restore)
+   */
+  async lookupAccount(
+    gasUrl: string,
+    identifier: { phone?: string; device_id?: string }
+  ): Promise<ApiResponse> {
+    return this.postToGas(gasUrl, {
+      action: "lookup_account",
+      ...identifier
+    });
   },
 
   /**
