@@ -539,11 +539,14 @@ const clearAppCache = async () => {
         </div>
         <button 
           type="button" 
-          class="btn-sm btn-outline" 
-          style="padding: 4px 10px; font-size: 0.72rem;"
+          class="btn-queue-action" 
+          :class="{ 'has-queue-items': queueCount > 0 }"
           @click="$emit('openQueue')"
         >
-          Lihat ({{ queueCount }}) ➔
+          <span v-if="queueCount > 0" class="queue-badge-count">{{ queueCount }}</span>
+          <span v-if="queueCount > 0">Tertunda</span>
+          <span v-else>Kosong (0)</span>
+          <span>➔</span>
         </button>
       </div>
 
@@ -613,5 +616,47 @@ const clearAppCache = async () => {
 
 @keyframes spin-sync {
   to { transform: rotate(360deg); }
+}
+
+.btn-queue-action {
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-queue-action:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-queue-action.has-queue-items {
+  color: #b45309;
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
+.btn-queue-action.has-queue-items:hover {
+  background-color: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.queue-badge-count {
+  background-color: #f59e0b;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  min-width: 14px;
+  text-align: center;
 }
 </style>

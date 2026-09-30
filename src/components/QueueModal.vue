@@ -16,6 +16,7 @@ defineEmits<{
 
 const getTypeBadge = (type?: string) => {
   switch (type) {
+    case 'register_account': return { icon: '👤', label: 'Akun Pengguna' };
     case 'survey': return { icon: '📋', label: 'Survei Lahan' };
     case 'plant': return { icon: '🌱', label: 'Tanam Baru' };
     case 'update_phase': return { icon: '🔄', label: 'Update Fase' };
@@ -88,11 +89,12 @@ const getTypeBadge = (type?: string) => {
         v-if="syncQueue.length > 0 && isOnline" 
         type="button" 
         class="btn btn-primary btn-full" 
-        style="margin-top: 16px;"
+        style="margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;"
         :disabled="isSyncing"
         @click="$emit('syncAll')"
       >
         <span v-if="isSyncing" class="spinner"></span>
+        <span v-if="isSyncing">Menyinkronkan Antrean ({{ syncQueue.length }})...</span>
         <span v-else>⚡ Sinkronkan Semua ({{ syncQueue.length }})</span>
       </button>
     </div>
