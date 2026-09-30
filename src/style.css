@@ -1170,6 +1170,11 @@ select.form-control {
   display: inline-block;
 }
 
+.btn-outline .spinner {
+  border-color: rgba(22, 163, 74, 0.25);
+  border-top-color: #16a34a;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

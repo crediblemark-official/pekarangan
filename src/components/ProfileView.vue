@@ -520,12 +520,13 @@ const clearAppCache = async () => {
         </div>
         <button 
           type="button" 
-          class="btn-sm btn-outline" 
-          style="padding: 4px 10px; font-size: 0.72rem; color: var(--primary); border-color: var(--primary-border); display: flex; align-items: center; gap: 4px;"
+          class="btn-sync-action" 
+          :class="{ 'btn-syncing': isSyncingData }"
           :disabled="isSyncingData"
           @click="syncCloudData"
         >
-          <span v-if="isSyncingData" class="spinner" style="width: 10px; height: 10px; border-width: 2px;"></span>
+          <span v-if="isSyncingData" class="spinner-green"></span>
+          <span v-if="isSyncingData">Menyinkronkan...</span>
           <span v-else>⚡ Sinkron</span>
         </button>
       </div>
@@ -569,3 +570,48 @@ const clearAppCache = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.btn-sync-action {
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #15803d;
+  background-color: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-sync-action:hover:not(:disabled) {
+  background-color: #dcfce7;
+  border-color: #4ade80;
+}
+
+.btn-syncing {
+  color: #166534 !important;
+  background-color: #f0fdf4 !important;
+  border-color: #86efac !important;
+  opacity: 0.9 !important;
+  cursor: not-allowed !important;
+}
+
+.spinner-green {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #bbf7d0;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  animation: spin-sync 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes spin-sync {
+  to { transform: rotate(360deg); }
+}
+</style>
