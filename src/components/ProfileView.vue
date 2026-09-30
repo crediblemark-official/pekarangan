@@ -30,6 +30,9 @@ const unlockForm = async () => {
       return;
     }
   }
+  // Muat ulang data terbaru dari storage lokal agar input tidak kosong
+  const freshSettings = StorageService.getSettings();
+  Object.assign(settings, freshSettings);
   isFormLocked.value = false;
   emit('showToast', 'Kunci form dibuka. Anda dapat mengubah data identitas.', 'success');
 };
@@ -49,6 +52,10 @@ const totalSavings = ref(StorageService.getTotalSavings());
 const queueCount = ref(StorageService.getSyncQueue().length);
 
 onMounted(async () => {
+  // Pastikan form selalu sinkron dengan data profil terbaru saat halaman dibuka
+  const freshSettings = StorageService.getSettings();
+  Object.assign(settings, freshSettings);
+
   const bio = await SecurityService.checkBiometry();
   if (bio.biometryType) {
     biometryType.value = bio.biometryType;
@@ -256,7 +263,7 @@ const clearAppCache = async () => {
             class="form-control" 
             :disabled="isFormLocked"
             :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
-            placeholder="Pak Budi Santoso"
+            placeholder="Belum diisi (Contoh: Budi Santoso)"
           />
         </div>
 
@@ -268,7 +275,7 @@ const clearAppCache = async () => {
             class="form-control" 
             :disabled="isFormLocked"
             :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
-            placeholder="081234567890"
+            placeholder="Contoh: 081234567890"
           />
         </div>
 
@@ -281,7 +288,7 @@ const clearAppCache = async () => {
               class="form-control" 
               :disabled="isFormLocked"
               :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
-              placeholder="01/02"
+              placeholder="Contoh: 01/02"
             />
           </div>
           <div class="form-group">
@@ -292,7 +299,7 @@ const clearAppCache = async () => {
               class="form-control" 
               :disabled="isFormLocked"
               :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
-              placeholder="Jl. Mawar No. 12"
+              placeholder="Contoh: Jl. Mawar No. 12"
             />
           </div>
         </div>
@@ -312,7 +319,7 @@ const clearAppCache = async () => {
             class="form-control" 
             :disabled="isFormLocked"
             :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
-            placeholder="Pekarangan Lestari"
+            placeholder="Belum diisi (Contoh: Pekarangan Mandiri)"
           />
         </div>
 

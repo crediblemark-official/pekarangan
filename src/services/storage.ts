@@ -83,16 +83,43 @@ export const StorageService = {
       const data = localStorage.getItem(KEYS.SETTINGS);
       if (data) {
         const parsed = JSON.parse(data);
+        let owner = parsed.ownerName || parsed.cadreName || '';
+        let yard = parsed.yardName || '';
+        let phone = parsed.phone || '';
+        let rt = parsed.defaultRtRw || '';
+        let status = parsed.landStatus || 'Milik Sendiri';
+        let area = parsed.landArea || '10-30 m²';
+        let addr = parsed.addressDetail || '';
+
+        // Jika ownerName di settings kosong, pulihkan dari data anggota pemilik lokal (jika ada)
+        if (!owner) {
+          try {
+            const membersData = localStorage.getItem(KEYS.MEMBERS);
+            if (membersData) {
+              const members: CommunityMemberItem[] = JSON.parse(membersData);
+              const ownerMember = members.find(m => m.isDeviceOwner);
+              if (ownerMember) {
+                owner = ownerMember.name || '';
+                yard = ownerMember.yardName || '';
+                phone = ownerMember.phone || '';
+                rt = ownerMember.rtRw || '';
+                status = ownerMember.statusLahan || status;
+                area = ownerMember.estimasiLuas || area;
+              }
+            }
+          } catch (_) {}
+        }
+
         return {
           gasUrl: (import.meta.env.VITE_GAS_URL as string) || parsed.gasUrl || '',
-          defaultRtRw: parsed.defaultRtRw || '',
-          cadreName: parsed.cadreName || '',
-          ownerName: parsed.ownerName || parsed.cadreName || '',
-          yardName: parsed.yardName || '',
-          phone: parsed.phone || '',
-          addressDetail: parsed.addressDetail || '',
-          landStatus: parsed.landStatus || 'Milik Sendiri',
-          landArea: parsed.landArea || '10-30 m²',
+          defaultRtRw: rt,
+          cadreName: owner,
+          ownerName: owner,
+          yardName: yard,
+          phone: phone,
+          addressDetail: addr,
+          landStatus: status,
+          landArea: area,
           theme: parsed.theme || 'dark',
           isBiometricLockEnabled: parsed.isBiometricLockEnabled !== false,
           deviceId: parsed.deviceId
