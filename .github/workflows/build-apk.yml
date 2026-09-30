@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java JDK 21
         uses: actions/setup-java@v4
@@ -85,29 +87,53 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
 
-      - name: Prepare APK for GitHub Release
+      - name: Prepare APK and Generate Changelog from Commits
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk Pekarangan-App.apk
+
+          APP_VERSION=$(node -p "require('./package.json').version")
+          echo "APP_VERSION=${APP_VERSION}" >> $GITHUB_ENV
+          
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            RELEASE_TAG="${{ github.ref_name }}"
+          else
+            RELEASE_TAG="v${APP_VERSION}"
+          fi
+          echo "RELEASE_TAG=${RELEASE_TAG}" >> $GITHUB_ENV
+
+          echo "### 📱 Pekarangan App ${RELEASE_TAG} - Signed Android APK" > release_notes.md
+          echo "" >> release_notes.md
+          echo "Aplikasi Android siap pakai yang sudah ditandatangani secara resmi (*Signed Release APK*)." >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- **Versi**: ${APP_VERSION}" >> release_notes.md
+          echo "- **Arsitektur**: Local-First Offline Mode (Blank Spot Ready)" >> release_notes.md
+          echo "- **Integrasi**: Google Sheets Backend + Single Device Policy (1 Akun 1 HP)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### 📝 Catatan Rilis & Riwayat Komit:" >> release_notes.md
+          echo "" >> release_notes.md
+          
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Mengambil commit dari $PREV_TAG sampai HEAD"
+            git log ${PREV_TAG}..HEAD --pretty=format:"* **%s** (%h - %an)" >> release_notes.md
+          else
+            git log -n 25 --pretty=format:"* **%s** (%h - %an)" >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "#### 📥 Cara Install di HP Android:" >> release_notes.md
+          echo "1. Unduh file **\`Pekarangan-App.apk\`** di bagian **Assets** di bawah." >> release_notes.md
+          echo "2. Buka file APK di HP Android Anda." >> release_notes.md
+          echo "3. Jika muncul konfirmasi *\"Install unknown apps\"*, izinkan untuk melanjutkan instalasi." >> release_notes.md
 
       - name: Publish to GitHub Releases
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
-          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'Pekarangan App v1.0.0 (Signed Release)' }}
-          body: |
-            ### 📱 Pekarangan Pangan Bergizi - Signed Android APK
-            
-            Aplikasi Android siap pakai yang sudah ditandatangani secara resmi (Signed Release APK).
-            
-            - **Versi**: 1.0.0
-            - **Arsitektur**: Local-First Offline Mode (Blank Spot Ready)
-            - **Integrasi**: Google Sheets Backend + Multi-Device Synchronization
-            
-            #### 📥 Cara Install di HP Android:
-            1. Unduh file **`Pekarangan-App.apk`** di bagian *Assets* di bawah ini.
-            2. Buka file APK di HP Android Anda.
-            3. Jika muncul konfirmasi *"Install unknown apps"*, izinkan untuk melanjutkan instalasi.
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Pekarangan App ${{ env.RELEASE_TAG }} (Signed Release)
+          body_path: release_notes.md
           files: Pekarangan-App.apk
           draft: false
           prerelease: false
