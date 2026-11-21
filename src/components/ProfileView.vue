@@ -251,7 +251,7 @@ const clearAppCache = async () => {
     <div class="card" style="background: linear-gradient(135deg, #064e3b, #15803d); color: #fff; padding: 12px 14px; margin-bottom: 0; border-radius: 0; box-shadow: none; border-bottom: 1px solid #166534;">
       <div style="display: flex; align-items: center; gap: 12px;">
         <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(255,255,255,0.4); flex-shrink: 0;">
-          <AppIcon name="home" size="md" class="text-white" />
+          <AppIcon name="home" size="md" color="#ffffff" />
         </div>
         <div style="flex: 1; min-width: 0;">
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -576,7 +576,7 @@ const clearAppCache = async () => {
           style="margin-left: auto; padding: 5px 12px; font-size: 0.75rem;"
           @click="saveTursoSettings"
         >
-          <AppIcon name="save" size="xs" class="text-white" />
+          <AppIcon name="save" size="xs" color="#ffffff" />
           <span>Simpan</span>
         </button>
       </div>

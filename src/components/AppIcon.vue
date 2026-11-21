@@ -1,6 +1,9 @@
 <template>
   <svg 
-    :class="computedClasses"
+    class="app-icon"
+    :width="numericPixelSize"
+    :height="numericPixelSize"
+    :style="iconInlineStyles"
     :viewBox="viewBox" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
@@ -266,6 +269,19 @@
       <line x1="14" y1="11" x2="14" y2="17" />
     </g>
 
+    <!-- Search / Cari -->
+    <g v-else-if="name === 'search' || name === 'cari'">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.35-4.35" />
+    </g>
+
+    <!-- Alert / Warning -->
+    <g v-else-if="name === 'alert' || name === 'warning'">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2.5" />
+    </g>
+
     <!-- Default Fallback: Generic Dot -->
     <g v-else>
       <circle cx="12" cy="12" r="6" />
@@ -278,32 +294,56 @@ import { computed } from 'vue';
 
 const props = withDefaults(defineProps<{
   name: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | string;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | number | string;
   strokeWidth?: number | string;
   duotone?: boolean;
   viewBox?: string;
+  color?: string;
 }>(), {
-  size: '',
+  size: 'md',
   strokeWidth: 1.85,
   duotone: true,
-  viewBox: '0 0 24 24'
+  viewBox: '0 0 24 24',
+  color: ''
 });
 
-const sizeClasses: Record<string, string> = {
-  xs: 'w-3.5 h-3.5',
-  sm: 'w-4 h-4',
-  md: 'w-4.5 h-4.5',
-  lg: 'w-5 h-5',
-  xl: 'w-6 h-6'
+const pixelSizes: Record<string, number> = {
+  xs: 14,
+  sm: 16,
+  md: 18,
+  lg: 20,
+  xl: 24,
+  '2xl': 32
 };
 
-const computedClasses = computed(() => {
-  const base = ['inline-block shrink-0 transition-colors'];
-  if (props.size && sizeClasses[props.size]) {
-    base.push(sizeClasses[props.size]);
-  } else if (props.size) {
-    base.push(props.size);
+const numericPixelSize = computed(() => {
+  if (typeof props.size === 'number') return props.size;
+  if (!props.size) return 18;
+  if (pixelSizes[props.size]) return pixelSizes[props.size];
+  const parsed = parseInt(String(props.size), 10);
+  return isNaN(parsed) ? 18 : parsed;
+});
+
+const iconInlineStyles = computed(() => {
+  const px = `${numericPixelSize.value}px`;
+  const style: Record<string, string> = {
+    width: px,
+    height: px,
+    minWidth: px,
+    minHeight: px
+  };
+  if (props.color) {
+    style.color = props.color;
   }
-  return base.join(' ');
+  return style;
 });
 </script>
+
+<style scoped>
+.app-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  box-sizing: content-box;
+}
+</style>

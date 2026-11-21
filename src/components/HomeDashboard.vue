@@ -29,36 +29,37 @@ const formattedSavings = computed(() => {
     <div class="home-hero-card">
       <div class="home-hero-top">
         <span class="home-hero-badge">Pekarangan Mandiri Pangan</span>
-        <span class="text-xs text-emerald-100 flex items-center gap-1">
-          <AppIcon name="sprout" size="xs" class="text-emerald-300" />
+        <div class="warga-nu-pill">
+          <AppIcon name="sprout" size="xs" color="#86efac" />
           <span>Warga NU</span>
-        </span>
+        </div>
       </div>
       <h2 class="home-hero-title">Halo, {{ settings.ownerName || 'Warga Pekarangan' }}</h2>
       <div class="home-yard-sub">
-        <span class="flex items-center gap-1">
-          <AppIcon name="home" size="xs" class="text-emerald-200" />
+        <div class="yard-chip">
+          <AppIcon name="home" size="xs" color="#bbf7d0" />
           <span>{{ settings.yardName || 'Pekarangan Mandiri' }}</span>
-        </span>
-        <span v-if="settings.defaultRtRw">•</span>
+        </div>
+        <span v-if="settings.defaultRtRw" class="sub-sep">•</span>
         <span v-if="settings.defaultRtRw">RT {{ settings.defaultRtRw }}</span>
-        <span v-if="settings.ranting">• {{ settings.ranting }}</span>
+        <span v-if="settings.ranting" class="sub-sep">•</span>
+        <span v-if="settings.ranting">{{ settings.ranting }}</span>
       </div>
     </div>
 
     <!-- Quick Stats Grid (Data Riil dari Database Turso SQLite) -->
     <div class="section-header-bar">
-      <span class="section-header-title flex items-center gap-1.5">
-        <AppIcon name="dashboard" size="xs" class="text-emerald-700" />
+      <div class="section-header-title">
+        <AppIcon name="dashboard" size="xs" color="#166534" />
         <span>Ringkasan Pekarangan Mandiri</span>
-      </span>
+      </div>
     </div>
 
     <div class="stat-grid-2x2">
       <!-- 1. Pekarangan Terdata -->
-      <div class="stat-box active:scale-98 transition-transform cursor-pointer" @click="$emit('navigate', 'community')">
+      <div class="stat-box" @click="$emit('navigate', 'community')">
         <div class="stat-box-icon">
-          <AppIcon name="home" size="lg" class="text-emerald-600" />
+          <AppIcon name="home" size="md" color="#16a34a" />
         </div>
         <div class="stat-box-body">
           <div class="stat-box-val font-mono">{{ membersCount }} KK</div>
@@ -67,9 +68,9 @@ const formattedSavings = computed(() => {
       </div>
 
       <!-- 2. Tanaman Aktif -->
-      <div class="stat-box active:scale-98 transition-transform cursor-pointer" @click="$emit('navigate', 'record')">
+      <div class="stat-box" @click="$emit('navigate', 'record')">
         <div class="stat-box-icon">
-          <AppIcon name="leaf" size="lg" class="text-emerald-600" />
+          <AppIcon name="leaf" size="md" color="#16a34a" />
         </div>
         <div class="stat-box-body">
           <div class="stat-box-val font-mono">{{ plantsCount }} Pohon</div>
@@ -78,9 +79,9 @@ const formattedSavings = computed(() => {
       </div>
 
       <!-- 3. Kelompok Ternak Produktif -->
-      <div class="stat-box active:scale-98 transition-transform cursor-pointer" @click="$emit('navigate', 'record')">
+      <div class="stat-box" @click="$emit('navigate', 'record')">
         <div class="stat-box-icon">
-          <AppIcon name="egg" size="lg" class="text-amber-600" />
+          <AppIcon name="egg" size="md" color="#d97706" />
         </div>
         <div class="stat-box-body">
           <div class="stat-box-val font-mono">{{ livestockCount }} Kandang</div>
@@ -89,9 +90,9 @@ const formattedSavings = computed(() => {
       </div>
 
       <!-- 4. Penghematan Belanja Dapur Riil -->
-      <div class="stat-box active:scale-98 transition-transform cursor-pointer" @click="$emit('navigate', 'record')">
+      <div class="stat-box" @click="$emit('navigate', 'record')">
         <div class="stat-box-icon">
-          <AppIcon name="sparkles" size="lg" class="text-emerald-600" />
+          <AppIcon name="sparkles" size="md" color="#16a34a" />
         </div>
         <div class="stat-box-body">
           <div class="stat-box-val font-mono">{{ formattedSavings }}</div>
@@ -105,42 +106,44 @@ const formattedSavings = computed(() => {
 
     <!-- Aksi Utama: Buka Pusat Pencatatan & Jurnal -->
     <div 
-      class="record-quick-action active:scale-[0.99] transition-transform"
+      class="record-quick-action"
       @click="$emit('navigate', 'record')"
     >
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-800">
-          <AppIcon name="clipboard" size="md" />
+      <div class="record-action-left">
+        <div class="record-action-icon-box">
+          <AppIcon name="clipboard" size="md" color="#166534" />
         </div>
-        <div>
-          <div class="font-bold text-xs text-emerald-950">
+        <div class="record-action-text">
+          <div class="record-action-title">
             Pusat Pencatatan & Jurnal Pekarangan
           </div>
-          <div class="text-[11px] text-neutral-600 mt-0.5">
+          <div class="record-action-sub">
             Catat tanam, kumpul telur harian, panen & konsumsi dapur
           </div>
         </div>
       </div>
-      <AppIcon name="arrow-right" size="sm" class="text-emerald-700" />
+      <div class="record-action-arrow">
+        <AppIcon name="arrow-right" size="sm" color="#16a34a" />
+      </div>
     </div>
 
     <!-- Section Divider Strip -->
     <div class="section-divider"></div>
 
     <!-- 4 Pilar Resmi Ekonomi Pekarangan Warga NU -->
-    <div class="bg-white">
+    <div class="pillar-section">
       <div class="section-header-bar">
-        <span class="section-header-title flex items-center gap-1.5">
-          <AppIcon name="building" size="xs" class="text-emerald-700" />
+        <div class="section-header-title">
+          <AppIcon name="building" size="xs" color="#166534" />
           <span>4 Pilar Resmi Ekonomi Pekarangan</span>
-        </span>
+        </div>
       </div>
 
       <div class="pillar-mini-grid">
         <!-- Pilar 1 -->
         <div class="pillar-mini-card">
-          <div class="pillar-mini-title flex items-center gap-1.5">
-            <AppIcon name="leaf" size="xs" class="text-emerald-700" />
+          <div class="pillar-mini-title">
+            <AppIcon name="leaf" size="xs" color="#166534" />
             <span>1. RPM</span>
           </div>
           <p class="pillar-mini-desc">
@@ -150,19 +153,19 @@ const formattedSavings = computed(() => {
 
         <!-- Pilar 2 -->
         <div class="pillar-mini-card">
-          <div class="pillar-mini-title flex items-center gap-1.5">
-            <AppIcon name="egg" size="xs" class="text-amber-700" />
+          <div class="pillar-mini-title">
+            <AppIcon name="egg" size="xs" color="#d97706" />
             <span>2. Kandang</span>
           </div>
           <p class="pillar-mini-desc">
-            <strong>Kandang Keluarga Produktif:</strong> Sumber protein telur, daging & tabungan aset hidup (living bank).
+            <strong>Kandang Keluarga:</strong> Sumber protein telur, daging & tabungan aset hidup (living bank).
           </p>
         </div>
 
         <!-- Pilar 3 -->
         <div class="pillar-mini-card">
-          <div class="pillar-mini-title flex items-center gap-1.5">
-            <AppIcon name="pill" size="xs" class="text-emerald-700" />
+          <div class="pillar-mini-title">
+            <AppIcon name="pill" size="xs" color="#166534" />
             <span>3. Apotek Hidup</span>
           </div>
           <p class="pillar-mini-desc">
@@ -172,8 +175,8 @@ const formattedSavings = computed(() => {
 
         <!-- Pilar 4 -->
         <div class="pillar-mini-card pillar-mamasar">
-          <div class="pillar-mini-title flex items-center gap-1.5 text-purple-800">
-            <AppIcon name="package" size="xs" class="text-purple-700" />
+          <div class="pillar-mini-title" style="color: #6b21a8;">
+            <AppIcon name="package" size="xs" color="#7e22ce" />
             <span>4. RPP ➔ Mamasar</span>
           </div>
           <p class="pillar-mini-desc">
@@ -214,6 +217,15 @@ const formattedSavings = computed(() => {
   border-radius: 4px;
 }
 
+.warga-nu-pill {
+  font-size: 0.72rem;
+  color: #dcfce7;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+}
+
 .home-hero-title {
   font-size: 1.15rem;
   font-weight: 800;
@@ -228,6 +240,17 @@ const formattedSavings = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+.yard-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sub-sep {
+  opacity: 0.6;
 }
 
 .section-header-bar {
@@ -240,6 +263,9 @@ const formattedSavings = computed(() => {
   font-size: 0.76rem;
   font-weight: 700;
   color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .stat-grid-2x2 {
@@ -255,6 +281,12 @@ const formattedSavings = computed(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.stat-box:active {
+  transform: scale(0.98);
 }
 
 .stat-box-icon {
@@ -278,7 +310,7 @@ const formattedSavings = computed(() => {
 .stat-box-lbl {
   font-size: 0.68rem;
   color: #64748b;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .section-divider {
@@ -296,6 +328,58 @@ const formattedSavings = computed(() => {
   background: #f0fdf4;
   border-bottom: 1px solid #bbf7d0;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.record-quick-action:active {
+  transform: scale(0.99);
+}
+
+.record-action-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.record-action-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.record-action-text {
+  min-width: 0;
+}
+
+.record-action-title {
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: #14532d;
+  line-height: 1.2;
+}
+
+.record-action-sub {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.record-action-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.pillar-section {
+  background: #ffffff;
 }
 
 .pillar-mini-grid {
@@ -322,6 +406,9 @@ const formattedSavings = computed(() => {
   font-weight: 700;
   color: #166534;
   margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .pillar-mini-desc {

@@ -1154,7 +1154,7 @@ const saveQuickConsume = () => {
             Nanti Saja
           </button>
           <button type="button" class="btn btn-primary btn-full active:scale-98 transition-transform flex items-center justify-center gap-1.5" style="background: #16a34a; border-color: #16a34a; font-size: 0.8rem; padding: 8px;" @click="confirmShareKabar">
-            <AppIcon name="send" size="xs" class="text-white" />
+            <AppIcon name="send" size="xs" color="#ffffff" />
             <span>Bagikan</span>
           </button>
         </div>

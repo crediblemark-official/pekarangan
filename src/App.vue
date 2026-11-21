@@ -630,9 +630,9 @@ onMounted(() => {
     <!-- Toast Notification -->
     <div v-if="toast.show" class="toast-container">
       <div :class="['toast', `toast-${toast.type}`]" class="flex items-center gap-1.5 font-medium">
-        <AppIcon v-if="toast.type === 'success'" name="check" size="xs" />
-        <AppIcon v-else-if="toast.type === 'warning'" name="alert" size="xs" />
-        <AppIcon v-else name="x" size="xs" />
+        <AppIcon v-if="toast.type === 'success'" name="check" size="xs" color="#16a34a" />
+        <AppIcon v-else-if="toast.type === 'warning'" name="alert" size="xs" color="#d97706" />
+        <AppIcon v-else name="x" size="xs" color="#dc2626" />
         <span>{{ toast.message }}</span>
       </div>
     </div>

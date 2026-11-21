@@ -250,11 +250,11 @@ onBeforeUnmount(() => {
           title="Tutup Kamera"
           aria-label="Tutup Kamera"
         >
-          <AppIcon name="x" size="md" class="text-white" />
+          <AppIcon name="x" size="md" color="#ffffff" />
         </button>
         
         <div class="camera-badge-title">
-          <AppIcon name="sprout" size="xs" class="text-emerald-400" />
+          <AppIcon name="sprout" size="xs" color="#34d399" />
           <span>Kamera Pekarangan</span>
         </div>
 
@@ -265,7 +265,7 @@ onBeforeUnmount(() => {
           title="Balik Kamera"
           aria-label="Balik Kamera"
         >
-          <AppIcon name="refresh" size="md" class="text-white" />
+          <AppIcon name="refresh" size="md" color="#ffffff" />
         </button>
       </div>
 
@@ -313,7 +313,7 @@ onBeforeUnmount(() => {
           title="Buka Galeri Foto"
           aria-label="Galeri"
         >
-          <AppIcon name="image" size="lg" class="text-white" />
+          <AppIcon name="image" size="lg" color="#ffffff" />
         </button>
 
         <!-- Shutter Button (Lingkaran Putih Tactile) -->
@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
           title="Ganti Kamera Depan/Belakang"
           aria-label="Balik Kamera"
         >
-          <AppIcon name="refresh" size="lg" class="text-white" />
+          <AppIcon name="refresh" size="lg" color="#ffffff" />
         </button>
       </div>
 
@@ -454,7 +454,7 @@ onBeforeUnmount(() => {
             :disabled="isSubmitting"
             @click="handleShare"
           >
-            <AppIcon v-if="!isSubmitting" name="send" size="sm" class="text-white" />
+            <AppIcon v-if="!isSubmitting" name="send" size="sm" color="#ffffff" />
             <span v-if="isSubmitting" class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
             <span>{{ isSubmitting ? 'Mengirim' : 'Bagikan' }}</span>
           </button>

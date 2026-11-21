@@ -43,11 +43,11 @@ const handleSurveyClick = () => {
     <!-- 2. Catat / Pusat Pencatatan -->
     <button 
       type="button" 
-      class="nav-tab-btn relative" 
+      class="nav-tab-btn" 
       :class="{ active: activeTab === 'record' && !isSurveyMode }"
       @click="$emit('changeTab', 'record')"
     >
-      <div class="relative inline-flex items-center justify-center">
+      <div class="nav-icon-wrapper">
         <AppIcon name="clipboard" size="lg" class="nav-svg-icon" />
         <span 
           v-if="surveyQueueCount > 0" 
@@ -69,9 +69,9 @@ const handleSurveyClick = () => {
         :disabled="isSubmitting"
         @click="handleSurveyClick"
       >
-        <span v-if="isSubmitting" class="spinner" style="width: 15px; height: 15px; border-width: 2px;"></span>
-        <AppIcon v-else-if="currentStep === 4" name="save" size="sm" class="text-white" />
-        <AppIcon v-else name="arrow-right" size="sm" class="text-white" />
+        <span v-if="isSubmitting" class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+        <AppIcon v-else-if="currentStep === 4" name="save" size="sm" color="#ffffff" />
+        <AppIcon v-else name="arrow-right" size="sm" color="#ffffff" />
         <span class="survey-step-label">{{ currentStep === 4 ? 'Simpan' : 'Lanjut' }}</span>
       </button>
 
@@ -87,11 +87,11 @@ const handleSurveyClick = () => {
         <div class="tiktok-btn-plate">
           <!-- Cyan accent layer left -->
           <div class="tiktok-wing cyan-wing"></div>
-          <!-- Emerald accent layer right -->
+          <!-- Emerald/Green accent layer right -->
           <div class="tiktok-wing emerald-wing"></div>
           <!-- Dark central core -->
           <div class="tiktok-core">
-            <AppIcon name="plus" size="sm" class="tiktok-icon text-white" stroke-width="2.6" />
+            <AppIcon name="plus" size="sm" color="#ffffff" stroke-width="2.8" />
           </div>
         </div>
       </button>
@@ -127,11 +127,9 @@ const handleSurveyClick = () => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(226, 232, 240, 0.85);
+  height: 58px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: space-around;
@@ -140,13 +138,7 @@ const handleSurveyClick = () => {
   margin: 0 auto;
   padding: 0 4px calc(env(safe-area-inset-bottom, 0px) / 2);
   box-sizing: border-box;
-}
-
-@media (prefers-color-scheme: dark) {
-  .app-bottom-nav {
-    background: rgba(15, 23, 42, 0.94);
-    border-top: 1px solid rgba(30, 41, 59, 0.85);
-  }
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
 }
 
 .nav-tab-btn {
@@ -161,7 +153,7 @@ const handleSurveyClick = () => {
   background: transparent;
   color: #64748b;
   cursor: pointer;
-  padding: 4px 0;
+  padding: 3px 0;
   transition: color 0.15s ease, transform 0.1s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -171,9 +163,16 @@ const handleSurveyClick = () => {
   transform: scale(0.92);
 }
 
+.nav-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .nav-svg-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   stroke-width: 1.85;
 }
 
@@ -198,7 +197,7 @@ const handleSurveyClick = () => {
   right: -8px;
   background: #dc2626;
   color: #ffffff;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 9999px;
@@ -211,7 +210,7 @@ const handleSurveyClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 54px;
+  flex: 0 0 52px;
   height: 100%;
   position: relative;
 }
@@ -238,7 +237,7 @@ const handleSurveyClick = () => {
 .tiktok-btn-plate {
   position: relative;
   width: 44px;
-  height: 30px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,9 +246,9 @@ const handleSurveyClick = () => {
 .tiktok-wing {
   position: absolute;
   top: 0;
-  width: 38px;
-  height: 30px;
-  border-radius: 9px;
+  width: 36px;
+  height: 28px;
+  border-radius: 8px;
 }
 
 .cyan-wing {
@@ -259,25 +258,20 @@ const handleSurveyClick = () => {
 
 .emerald-wing {
   right: 0;
-  background: #10b981;
+  background: #00e676;
 }
 
 .tiktok-core {
   position: relative;
   z-index: 2;
-  width: 38px;
-  height: 30px;
+  width: 36px;
+  height: 28px;
   background: #0f172a;
-  border-radius: 8.5px;
+  border-radius: 7.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-}
-
-.tiktok-icon {
-  width: 17px;
-  height: 17px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 /* SURVEY STEP BUTTON */
@@ -285,8 +279,8 @@ const handleSurveyClick = () => {
   background: linear-gradient(135deg, #16a34a, #15803d);
   color: #ffffff;
   border: none;
-  border-radius: 18px;
-  padding: 6px 12px;
+  border-radius: 16px;
+  padding: 5px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -294,7 +288,7 @@ const handleSurveyClick = () => {
   gap: 2px;
   box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
   cursor: pointer;
-  min-width: 54px;
+  min-width: 50px;
   transition: transform 0.1s ease;
 }
 
