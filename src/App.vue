@@ -13,6 +13,7 @@ import CommunityHub from './components/CommunityHub.vue';
 import RecordHub from './components/RecordHub.vue';
 import ProfileView from './components/ProfileView.vue';
 import OnboardingSetup from './components/OnboardingSetup.vue';
+import CreatePostModal from './components/CreatePostModal.vue';
 import { SecurityService } from './services/security';
 
 // Survey Step Components (Fase 1)
@@ -56,6 +57,14 @@ const isCameraLoading = ref(false);
 
 // Modals State
 const showQueueModal = ref(false);
+const showCreatePostModal = ref(false);
+const communityRefreshKey = ref(0);
+
+const onPostCreated = () => {
+  showCreatePostModal.value = false;
+  communityRefreshKey.value++;
+  activeNavTab.value = 'community';
+};
 
 // Google Apps Script Web App URL from environment
 const GAS_URL = getEffectiveGasUrl();
@@ -521,9 +530,10 @@ onMounted(() => {
       <!-- 2. COMMUNITY (DIREKTORI PEKARANGAN WARGA) -->
       <CommunityHub 
         v-if="activeNavTab === 'community'"
+        :key="'comm-' + communityRefreshKey"
         @show-toast="showToast"
-        @go-to-record="activeNavTab = 'record'"
         @go-to-profile="activeNavTab = 'profile'"
+        @open-create-post="showCreatePostModal = true"
       />
 
       <!-- 2. CATAT (PUSAT PENCATATAN PEKARANGAN) -->
@@ -582,7 +592,7 @@ onMounted(() => {
       @done="onOnboardingDone" 
     />
 
-    <!-- Fixed Bottom Navigation Bar (Tombol tengah berubah jadi Lanjut / Simpan saat mode survei) -->
+    <!-- Fixed Bottom Navigation Bar (Tombol tengah bergaya TikTok / Lanjut-Simpan saat survei) -->
     <AppBottomNav 
       :active-tab="activeNavTab === 'survey' ? 'record' : activeNavTab"
       :survey-queue-count="syncQueue.length"
@@ -592,6 +602,15 @@ onMounted(() => {
       @change-tab="(tab) => activeNavTab = tab"
       @next-step="nextStep"
       @submit-survey="submitForm"
+      @open-create-post="showCreatePostModal = true"
+    />
+
+    <!-- Modal TikTok Center Action: Kabarkan Pekarangan -->
+    <CreatePostModal 
+      :show="showCreatePostModal"
+      @close="showCreatePostModal = false"
+      @post-created="onPostCreated"
+      @show-toast="showToast"
     />
 
     <!-- Queue Modal -->
