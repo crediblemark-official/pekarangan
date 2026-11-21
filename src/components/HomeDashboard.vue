@@ -147,7 +147,7 @@ const formattedSavings = computed(() => {
             <span>1. RPM</span>
           </div>
           <p class="pillar-mini-desc">
-            <strong>Rumah Pangan Mandiri:</strong> Sayuran daun, cabai, tomat, terong & umbi segar pemotong belanja dapur.
+            <strong>Rumah Pangan Mandiri:</strong> Mandiri pangan, mandiri ekonomi, mandiri masa depan (sayuran & cabai dapur).
           </p>
         </div>
 
@@ -158,7 +158,7 @@ const formattedSavings = computed(() => {
             <span>2. Kandang</span>
           </div>
           <p class="pillar-mini-desc">
-            <strong>Kandang Keluarga:</strong> Sumber protein telur, daging & tabungan aset hidup (living bank).
+            <strong>Keluarga Produktif:</strong> Sumber protein, tabungan aset hidup (living bank), dan pendapatan.
           </p>
         </div>
 
@@ -169,7 +169,7 @@ const formattedSavings = computed(() => {
             <span>3. Apotek Hidup</span>
           </div>
           <p class="pillar-mini-desc">
-            <strong>Farmasi Mini TOGA:</strong> Jahe, kunyit, temulawak, serai & sirih untuk imunitas dan obat herbal.
+            <strong>Farmasi Mini:</strong> Kedaulatan kesehatan herbal keluarga & ketahanan rimpang obat alami.
           </p>
         </div>
 
@@ -177,10 +177,10 @@ const formattedSavings = computed(() => {
         <div class="pillar-mini-card pillar-mamasar">
           <div class="pillar-mini-title" style="color: #6b21a8;">
             <AppIcon name="package" size="xs" color="#7e22ce" />
-            <span>4. RPP ➔ Mamasar</span>
+            <span>4. RPP Olahan</span>
           </div>
           <p class="pillar-mini-desc">
-            <strong>Rumah Produksi:</strong> Olah surplus tahan simpan (sambal, keripik, jamu) dipasarkan ke Mamasar.
+            <strong>Rumah Produksi:</strong> Mengolah hasil sendiri, menjual produk tahan simpan dengan nilai lebih tinggi.
           </p>
         </div>
       </div>

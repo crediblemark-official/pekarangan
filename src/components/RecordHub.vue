@@ -365,7 +365,7 @@ const saveHarvest = () => {
     konsumsi: 'Dikonsumsi mandiri keluarga (menghemat belanja dapur)',
     sedekah: 'Dibagikan ke tetangga / kerabat sekitar',
     berbagi: 'Dibagikan ke tetangga / kerabat sekitar',
-    olahan_rpp: 'Diolah di Rumah Produksi Pekarangan (RPP) ➔ Dipasarkan ke Mamasar'
+    olahan_rpp: 'Diolah di Rumah Produksi Pekarangan (RPP) ➔ Olahan Siap Jual'
   };
 
   const log: ActivityLogItem = {
@@ -997,7 +997,7 @@ const saveQuickConsume = () => {
             <label v-for="opt in [
               { val: 'konsumsi', icon: 'utensils', label: 'Konsumsi Mandiri Keluarga', sub: 'Makan sendiri & hemat belanja dapur' },
               { val: 'sedekah',  icon: 'heart-handshake', label: 'Berbagi ke Tetangga', sub: 'Dibagikan ke kerabat / tetangga sekitar' },
-              { val: 'olahan_rpp', icon: 'package', label: 'Diolah di RPP ➔ Mamasar', sub: 'Diselamatkan jadi produk olahan tahan simpan untuk etalase Mamasar' }
+              { val: 'olahan_rpp', icon: 'package', label: 'Diolah Jadi Produk RPP (Olahan Warga)', sub: 'Diselamatkan jadi produk olahan tahan simpan untuk dipasarkan ke warga' }
             ]" :key="opt.val" :style="{
               display: 'flex', alignItems: 'center', gap: '10px',
               padding: '9px 12px', borderRadius: '10px',
