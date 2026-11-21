@@ -240,7 +240,7 @@ export const TursoService = {
         content TEXT NOT NULL,
         photo_url TEXT,
         metric_badge TEXT,
-        reactions_data TEXT DEFAULT '{"berkah":0,"masyaallah":0,"seger":0,"semangat":0}',
+        reactions_data TEXT DEFAULT '{"keren":0,"suka":0,"seger":0,"semangat":0}',
         is_mamasar_product INTEGER DEFAULT 0,
         created_at TEXT DEFAULT (datetime('now', 'localtime'))
       )`,
@@ -858,12 +858,23 @@ export const TursoService = {
       });
 
       return rs.rows.map(row => {
-        let reactions: KabarReactions = { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 };
+        let rawReactions: any = {};
         try {
           if (row.reactions_data) {
-            reactions = typeof row.reactions_data === 'string' ? JSON.parse(row.reactions_data as string) : (row.reactions_data as any);
+            rawReactions = typeof row.reactions_data === 'string' ? JSON.parse(row.reactions_data as string) : (row.reactions_data as any);
           }
         } catch {}
+
+        const reactions: KabarReactions = {
+          keren: (rawReactions.keren ?? rawReactions.berkah ?? 0),
+          suka: (rawReactions.suka ?? rawReactions.masyaallah ?? 0),
+          seger: (rawReactions.seger ?? 0),
+          semangat: (rawReactions.semangat ?? 0)
+        };
+
+        let userReaction: any = row.user_reaction;
+        if (userReaction === 'berkah') userReaction = 'keren';
+        if (userReaction === 'masyaallah') userReaction = 'suka';
 
         return {
           id: String(row.id),
@@ -879,7 +890,7 @@ export const TursoService = {
           photoUrl: row.photo_url ? String(row.photo_url) : undefined,
           metricBadge: row.metric_badge ? String(row.metric_badge) : undefined,
           reactions,
-          userReaction: (row.user_reaction as any) || null,
+          userReaction,
           createdAt: String(row.created_at || ''),
           isMamasarProduct: Boolean(row.is_mamasar_product)
         };
@@ -897,7 +908,7 @@ export const TursoService = {
     const client = getTursoClient();
     if (!client) return false;
     try {
-      const reactionsJson = JSON.stringify(post.reactions || { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 });
+      const reactionsJson = JSON.stringify(post.reactions || { keren: 0, suka: 0, seger: 0, semangat: 0 });
       await client.execute({
         sql: `INSERT INTO tbl_kabar_pekarangan (
                 id, author_id, author_name, author_phone, yard_name,
@@ -929,15 +940,19 @@ export const TursoService = {
   },
 
   /**
-   * Toggle reaksi doa (Berkah, MasyaAllah, Seger, Semangat)
+   * Toggle reaksi kabar pekarangan (Keren, Suka, Seger, Semangat)
    */
   async togglePostReaction(
     postId: string,
     userPhone: string,
-    reactionType: 'berkah' | 'masyaallah' | 'seger' | 'semangat'
-  ): Promise<{ reactions: KabarReactions; userReaction: 'berkah' | 'masyaallah' | 'seger' | 'semangat' | null } | null> {
+    reactionType: 'keren' | 'suka' | 'seger' | 'semangat' | 'berkah' | 'masyaallah'
+  ): Promise<{ reactions: KabarReactions; userReaction: 'keren' | 'suka' | 'seger' | 'semangat' | null } | null> {
     const client = getTursoClient();
     if (!client || !userPhone) return null;
+
+    const normType: 'keren' | 'suka' | 'seger' | 'semangat' = 
+      reactionType === 'berkah' ? 'keren' : 
+      reactionType === 'masyaallah' ? 'suka' : reactionType;
 
     try {
       const existing = await client.execute({
@@ -945,51 +960,54 @@ export const TursoService = {
         args: [postId, userPhone]
       });
 
-      let nextUserReaction: 'berkah' | 'masyaallah' | 'seger' | 'semangat' | null = null;
-      let diffBerkah = 0;
-      let diffMasya = 0;
+      let nextUserReaction: 'keren' | 'suka' | 'seger' | 'semangat' | null = null;
+      let diffKeren = 0;
+      let diffSuka = 0;
       let diffSeger = 0;
       let diffSemangat = 0;
 
       if (existing.rows.length > 0) {
-        const prev = existing.rows[0].reaction_type as string;
-        if (prev === reactionType) {
+        let prev = existing.rows[0].reaction_type as string;
+        if (prev === 'berkah') prev = 'keren';
+        if (prev === 'masyaallah') prev = 'suka';
+
+        if (prev === normType) {
           await client.execute({
             sql: `DELETE FROM tbl_kabar_reactions WHERE post_id = ? AND user_phone = ?`,
             args: [postId, userPhone]
           });
-          if (prev === 'berkah') diffBerkah = -1;
-          if (prev === 'masyaallah') diffMasya = -1;
+          if (prev === 'keren') diffKeren = -1;
+          if (prev === 'suka') diffSuka = -1;
           if (prev === 'seger') diffSeger = -1;
           if (prev === 'semangat') diffSemangat = -1;
           nextUserReaction = null;
         } else {
           await client.execute({
             sql: `UPDATE tbl_kabar_reactions SET reaction_type = ?, created_at = datetime('now', 'localtime') WHERE post_id = ? AND user_phone = ?`,
-            args: [reactionType, postId, userPhone]
+            args: [normType, postId, userPhone]
           });
-          if (prev === 'berkah') diffBerkah = -1;
-          if (prev === 'masyaallah') diffMasya = -1;
+          if (prev === 'keren') diffKeren = -1;
+          if (prev === 'suka') diffSuka = -1;
           if (prev === 'seger') diffSeger = -1;
           if (prev === 'semangat') diffSemangat = -1;
 
-          if (reactionType === 'berkah') diffBerkah += 1;
-          if (reactionType === 'masyaallah') diffMasya += 1;
-          if (reactionType === 'seger') diffSeger += 1;
-          if (reactionType === 'semangat') diffSemangat += 1;
-          nextUserReaction = reactionType;
+          if (normType === 'keren') diffKeren += 1;
+          if (normType === 'suka') diffSuka += 1;
+          if (normType === 'seger') diffSeger += 1;
+          if (normType === 'semangat') diffSemangat += 1;
+          nextUserReaction = normType;
         }
       } else {
         const randId = 'rc-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
         await client.execute({
           sql: `INSERT INTO tbl_kabar_reactions (id, post_id, user_phone, reaction_type) VALUES (?, ?, ?, ?)`,
-          args: [randId, postId, userPhone, reactionType]
+          args: [randId, postId, userPhone, normType]
         });
-        if (reactionType === 'berkah') diffBerkah = 1;
-        if (reactionType === 'masyaallah') diffMasya = 1;
-        if (reactionType === 'seger') diffSeger = 1;
-        if (reactionType === 'semangat') diffSemangat = 1;
-        nextUserReaction = reactionType;
+        if (normType === 'keren') diffKeren = 1;
+        if (normType === 'suka') diffSuka = 1;
+        if (normType === 'seger') diffSeger = 1;
+        if (normType === 'semangat') diffSemangat = 1;
+        nextUserReaction = normType;
       }
 
       const postRow = await client.execute({
@@ -997,17 +1015,24 @@ export const TursoService = {
         args: [postId]
       });
 
-      let currentReactions: KabarReactions = { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 };
+      let rawReactions: any = {};
       if (postRow.rows.length > 0 && postRow.rows[0].reactions_data) {
         try {
-          currentReactions = JSON.parse(postRow.rows[0].reactions_data as string);
+          rawReactions = typeof postRow.rows[0].reactions_data === 'string'
+            ? JSON.parse(postRow.rows[0].reactions_data as string)
+            : postRow.rows[0].reactions_data;
         } catch {}
       }
 
-      currentReactions.berkah = Math.max(0, (currentReactions.berkah || 0) + diffBerkah);
-      currentReactions.masyaallah = Math.max(0, (currentReactions.masyaallah || 0) + diffMasya);
-      currentReactions.seger = Math.max(0, (currentReactions.seger || 0) + diffSeger);
-      currentReactions.semangat = Math.max(0, (currentReactions.semangat || 0) + diffSemangat);
+      const currentReactions: KabarReactions = {
+        keren: Math.max(0, (rawReactions.keren ?? rawReactions.berkah ?? 0) + diffKeren),
+        suka: Math.max(0, (rawReactions.suka ?? rawReactions.masyaallah ?? 0) + diffSuka),
+        seger: Math.max(0, (rawReactions.seger ?? 0) + diffSeger),
+        semangat: Math.max(0, (rawReactions.semangat ?? 0) + diffSemangat)
+      };
+      // Keep legacy keys synced for compatibility
+      currentReactions.berkah = currentReactions.keren;
+      currentReactions.masyaallah = currentReactions.suka;
 
       await client.execute({
         sql: `UPDATE tbl_kabar_pekarangan SET reactions_data = ? WHERE id = ?`,
@@ -1025,7 +1050,7 @@ export const TursoService = {
   },
 
   /**
-   * Menghitung statistik klasemen 'Liga Fastabiqul Khairat' (Keluarga, Ranting, MWC)
+   * Menghitung statistik klasemen 'Liga Pekarangan' (Keluarga, Ranting, MWC)
    */
   async getLeaderboardStats(currentUserPhone?: string): Promise<{
     familyLeaderboard: FamilyLeaderboardItem[];

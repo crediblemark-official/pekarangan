@@ -143,15 +143,15 @@
       <path v-if="duotone" d="M12 18a3 3 0 0 0 3-3c0-1.5-1.5-2.5-1.5-2.5S12 14 12 15a1 1 0 0 1-1 1c-.5 0-1-.5-1-1 0 0-1 1-1 2a3 3 0 0 0 3 3z" fill="currentColor" fill-opacity="0.3" stroke="none" />
     </g>
 
-    <!-- Sparkles / Berkah / AI / Magic -->
-    <g v-else-if="name === 'sparkles' || name === 'berkah' || name === 'magic' || name === 'doa'">
+    <!-- Sparkles / Keren / Magic / AI -->
+    <g v-else-if="name === 'sparkles' || name === 'keren' || name === 'berkah' || name === 'magic' || name === 'doa'">
       <path d="m12 3 1.9 4.7L18.5 9.5l-4.6 1.8L12 16l-1.9-4.7L5.5 9.5l4.6-1.8L12 3Z" />
       <path v-if="duotone" d="m12 3 1.9 4.7L18.5 9.5l-4.6 1.8L12 16l-1.9-4.7L5.5 9.5l4.6-1.8L12 3Z" fill="currentColor" fill-opacity="0.22" stroke="none" />
       <path d="m19 15 .8 1.8 1.7.7-1.7.7-.8 1.8-.8-1.8-1.7-.7 1.7-.7.8-1.8Z" />
     </g>
 
-    <!-- Heart / MasyaAllah / Cinta -->
-    <g v-else-if="name === 'heart' || name === 'masyaallah' || name === 'love'">
+    <!-- Heart / Suka / Cinta -->
+    <g v-else-if="name === 'heart' || name === 'suka' || name === 'masyaallah' || name === 'love'">
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       <path v-if="duotone" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="currentColor" fill-opacity="0.2" stroke="none" />
     </g>

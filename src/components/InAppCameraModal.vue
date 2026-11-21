@@ -43,7 +43,7 @@ const CATEGORIES = [
   { id: 'ternak', label: 'Ternak', icon: 'egg' },
   { id: 'dapur', label: 'Dapur', icon: 'utensils' },
   { id: 'apotek', label: 'Apotek', icon: 'pill' },
-  { id: 'sedekah', label: 'Sedekah', icon: 'heart-handshake' },
+  { id: 'berbagi', label: 'Berbagi', icon: 'heart-handshake' },
   { id: 'rpp', label: 'RPP', icon: 'package' }
 ];
 
@@ -194,8 +194,8 @@ const handleShare = async () => {
     content: caption.value.trim(),
     photoUrl: capturedPhotoUrl.value,
     isMamasarProduct: selectedCategory.value === 'rpp' && isMamasar.value,
-    reactions: { berkah: 1, masyaallah: 0, seger: 0, semangat: 0 },
-    userReaction: 'berkah',
+    reactions: { keren: 1, suka: 0, seger: 0, semangat: 0 },
+    userReaction: 'keren',
     createdAt: new Date().toISOString()
   };
 
@@ -410,7 +410,7 @@ onBeforeUnmount(() => {
             v-model="caption" 
             rows="3" 
             class="caption-textarea" 
-            placeholder="Tulis catatan kabar pekaranganmu... (contoh: Alhamdulillah panen bayam dan cabai rawit segar hari ini)"
+            placeholder="Tulis catatan kabar pekaranganmu... (contoh: Panen bayam dan cabai rawit segar hari ini)"
             autofocus
           ></textarea>
 

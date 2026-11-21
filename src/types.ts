@@ -176,7 +176,7 @@ export interface HarvestRecordItem {
   qty: string;
   unit: string;
   estimatedValue: number;
-  allocation: 'konsumsi' | 'sedekah' | 'barter' | 'olahan_rpp' | 'jual_surplus';
+  allocation: 'konsumsi' | 'sedekah' | 'berbagi' | 'barter' | 'olahan_rpp' | 'jual_surplus';
   consumedQty?: number;
   surplusQty?: number;
   date: string;
@@ -216,17 +216,19 @@ export interface MasterOptions {
 
 /**
  * ============================================================================
- * APA KABAR PEKARANGANMU & LIGA FASTABIQUL KHAIRAT (SOSIAL & KOMPETISI)
+ * APA KABAR PEKARANGANMU & LIGA PEKARANGAN (SOSIAL & KOMPETISI)
  * ============================================================================
  */
 
-export type KabarCategory = 'panen' | 'tanam' | 'ternak' | 'dapur' | 'apotek' | 'sedekah' | 'rpp';
+export type KabarCategory = 'panen' | 'tanam' | 'ternak' | 'dapur' | 'apotek' | 'berbagi' | 'sedekah' | 'rpp';
 
 export interface KabarReactions {
-  berkah: number;     // 🤲 Berkah!
-  masyaallah: number; // 💚 MasyaAllah
-  seger: number;      // 🥬 Seger Rek!
+  keren: number;      // ✨ Keren!
+  suka: number;       // ❤️ Suka
+  seger: number;      // 🥬 Seger
   semangat: number;   // 🔥 Semangat!
+  berkah?: number;    // Legacy fallback
+  masyaallah?: number;// Legacy fallback
 }
 
 export interface CommunityPostItem {
@@ -241,9 +243,9 @@ export interface CommunityPostItem {
   title: string;
   content: string;
   photoUrl?: string;
-  metricBadge?: string; // e.g. "🌾 Panen 3.5 kg" atau "🥚 15 Butir"
+  metricBadge?: string; // e.g. "Panen 3.5 kg" atau "15 Butir"
   reactions: KabarReactions;
-  userReaction?: 'berkah' | 'masyaallah' | 'seger' | 'semangat' | null;
+  userReaction?: 'keren' | 'suka' | 'seger' | 'semangat' | 'berkah' | 'masyaallah' | null;
   createdAt: string;
   isMamasarProduct?: boolean;
 }

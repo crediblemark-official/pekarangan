@@ -54,8 +54,8 @@ const confirmShareKabar = () => {
     content: shareKabarData.value.content,
     metricBadge: shareKabarData.value.metricBadge,
     isMamasarProduct: shareKabarData.value.isMamasarProduct,
-    reactions: { berkah: 1, masyaallah: 0, seger: 0, semangat: 0 },
-    userReaction: 'berkah',
+    reactions: { keren: 1, suka: 0, seger: 0, semangat: 0 },
+    userReaction: 'keren',
     createdAt: new Date().toISOString()
   };
 
@@ -65,7 +65,7 @@ const confirmShareKabar = () => {
   }
 
   showShareKabarModal.value = false;
-  emit('showToast', 'Alhamdulillah! Kabar pekarangan telah dibagikan ke komunitas warga.', 'success');
+  emit('showToast', 'Kabar pekarangan telah dibagikan ke komunitas warga.', 'success');
 };
 
 // Database Reactive State
@@ -151,7 +151,7 @@ const harvestForm = ref({
   qty: '',
   unit: 'Gram / Ikat',
   estimatedValue: 20000,
-  allocation: 'konsumsi' as 'konsumsi' | 'sedekah' | 'olahan_rpp'
+  allocation: 'konsumsi' as 'konsumsi' | 'sedekah' | 'berbagi' | 'olahan_rpp'
 });
 
 // Aksi Tambah Tanam Baru (Dengan HST Dinamis)
@@ -320,7 +320,7 @@ const saveEggLog = () => {
 
   shareKabarData.value = {
     title: `Pungut ${count} Butir Telur Segar`,
-    content: `Alhamdulillah produksi telur hari ini bertambah +${count} butir dari kandang ${live.name}. Total hari ini terkumpul ${live.todayYield} butir untuk kebutuhan keluarga!`,
+    content: `Produksi telur hari ini bertambah +${count} butir dari kandang ${live.name}. Total hari ini terkumpul ${live.todayYield} butir untuk kebutuhan keluarga!`,
     category: 'ternak',
     metricBadge: `${count} Butir`,
     isMamasarProduct: false
@@ -363,7 +363,8 @@ const saveHarvest = () => {
 
   const allocationNotes: Record<string, string> = {
     konsumsi: 'Dikonsumsi mandiri keluarga (menghemat belanja dapur)',
-    sedekah: 'Disedekahkan ke tetangga / kerabat yang membutuhkan',
+    sedekah: 'Dibagikan ke tetangga / kerabat sekitar',
+    berbagi: 'Dibagikan ke tetangga / kerabat sekitar',
     olahan_rpp: 'Diolah di Rumah Produksi Pekarangan (RPP) ➔ Dipasarkan ke Mamasar'
   };
 
@@ -401,8 +402,8 @@ const saveHarvest = () => {
   emit('showToast', `Panen ${plantName} (${harvestForm.value.qty}) senilai Rp ${val.toLocaleString()} berhasil dicatat!`);
 
   shareKabarData.value = {
-    title: `Alhamdulillah Panen ${plantName}!`,
-    content: `Alhamdulillah hasil panen ${plantName} (${harvestForm.value.qty}) dipetik hari ini. ${allocationNotes[harvestForm.value.allocation] || ''}`,
+    title: `Panen Segar ${plantName}!`,
+    content: `Hasil panen ${plantName} (${harvestForm.value.qty}) dipetik hari ini. ${allocationNotes[harvestForm.value.allocation] || ''}`,
     category: 'panen',
     metricBadge: `Panen ${harvestForm.value.qty}`,
     isMamasarProduct: harvestForm.value.allocation === 'olahan_rpp'
@@ -994,9 +995,9 @@ const saveQuickConsume = () => {
           <label class="form-label">Alokasi Hasil Panen</label>
           <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
             <label v-for="opt in [
-              { val: 'konsumsi', icon: '🍽️', label: 'Konsumsi Mandiri Keluarga', sub: 'Makan sendiri & hemat belanja dapur' },
-              { val: 'sedekah',  icon: '❤️', label: 'Sedekah ke Tetangga', sub: 'Berbagi ke kerabat / tetangga yang membutuhkan' },
-              { val: 'olahan_rpp', icon: '🍯', label: 'Diolah di RPP ➔ Mamasar', sub: 'Diselamatkan jadi produk olahan tahan simpan untuk etalase Mamasar' }
+              { val: 'konsumsi', icon: 'utensils', label: 'Konsumsi Mandiri Keluarga', sub: 'Makan sendiri & hemat belanja dapur' },
+              { val: 'sedekah',  icon: 'heart-handshake', label: 'Berbagi ke Tetangga', sub: 'Dibagikan ke kerabat / tetangga sekitar' },
+              { val: 'olahan_rpp', icon: 'package', label: 'Diolah di RPP ➔ Mamasar', sub: 'Diselamatkan jadi produk olahan tahan simpan untuk etalase Mamasar' }
             ]" :key="opt.val" :style="{
               display: 'flex', alignItems: 'center', gap: '10px',
               padding: '9px 12px', borderRadius: '10px',
@@ -1006,7 +1007,7 @@ const saveQuickConsume = () => {
               transition: 'all 0.15s'
             }" @click="harvestForm.allocation = opt.val as any">
               <input type="radio" :value="opt.val" v-model="harvestForm.allocation" style="accent-color: var(--primary); width:15px; height:15px;" />
-              <span style="font-size: 1.1rem;">{{ opt.icon }}</span>
+              <AppIcon :name="opt.icon" size="sm" :class="harvestForm.allocation === opt.val ? 'text-emerald-600' : 'text-slate-500'" />
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 5px;">
                   <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-main);">{{ opt.label }}</span>
@@ -1136,7 +1137,7 @@ const saveQuickConsume = () => {
           Catatan Berhasil Disimpan
         </h3>
         <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 12px; line-height: 1.4;">
-          Bagikan kabar hasil pekarangan ini ke <strong>"Apa Kabar Pekaranganmu?"</strong> untuk syiar kebaikan & poin Fastabiqul Khairat.
+          Bagikan kabar hasil pekarangan ini ke <strong>"Apa Kabar Pekaranganmu?"</strong> untuk inspirasi warga & menambah poin Liga Pekarangan.
         </p>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: left; margin-bottom: 12px;">

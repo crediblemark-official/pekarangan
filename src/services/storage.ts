@@ -512,10 +512,10 @@ export const StorageService = {
         ranting: 'Gapura Timur',
         mwcZone: 'MWC Gapura',
         category: 'panen',
-        title: 'Alhamdulillah Panen Cabai Rawit & Bayam Hijau',
-        content: 'Pagi ini petik cabai rawit merah dan seikat bayam segar dari polybag pekarangan samping. Alhamdulillah uang belanja dapur hari ini hemat Rp 15.000!',
+        title: 'Panen Cabai Rawit & Bayam Hijau',
+        content: 'Pagi ini petik cabai rawit merah dan seikat bayam segar dari polybag pekarangan samping. Uang belanja dapur hari ini berhasil hemat Rp 15.000!',
         metricBadge: 'Panen 1.2 kg',
-        reactions: { berkah: 6, masyaallah: 4, seger: 5, semangat: 2 },
+        reactions: { keren: 6, suka: 4, seger: 5, semangat: 2 },
         userReaction: null,
         createdAt: new Date(Date.now() - 3600000 * 3).toISOString()
       },
@@ -523,14 +523,14 @@ export const StorageService = {
         id: 'post-init-2',
         authorId: 'MBR-20261016-9253',
         authorName: 'Zainur Rahman Rafiki',
-        yardName: 'Pekarangan Berkah NU',
+        yardName: 'Pekarangan Hijau Gapura',
         ranting: 'Gapura Timur',
         mwcZone: 'MWC Gapura',
         category: 'ternak',
         title: 'Pungut 14 Butir Telur Ayam Segar',
-        content: 'Alhamdulillah produksi telur ayam kandang produktif hari ini melimpah. Sebagian untuk sarapan anak-anak, sisanya disedekahkan ke tetangga musholla.',
+        content: 'Produksi telur ayam kandang produktif hari ini melimpah. Sebagian untuk sarapan anak-anak, sisanya dibagikan ke tetangga sekitar.',
         metricBadge: '14 Butir Telur',
-        reactions: { berkah: 8, masyaallah: 7, seger: 3, semangat: 4 },
+        reactions: { keren: 8, suka: 7, seger: 3, semangat: 4 },
         userReaction: null,
         createdAt: new Date(Date.now() - 3600000 * 12).toISOString()
       }
@@ -549,26 +549,43 @@ export const StorageService = {
     this.saveCommunityPosts(list);
   },
 
-  toggleReactionLocal(postId: string, reactionType: 'berkah' | 'masyaallah' | 'seger' | 'semangat'): { reactions: KabarReactions; userReaction: any } | null {
+  toggleReactionLocal(
+    postId: string, 
+    reactionType: 'keren' | 'suka' | 'seger' | 'semangat' | 'berkah' | 'masyaallah'
+  ): { reactions: KabarReactions; userReaction: any } | null {
     const list = this.getCommunityPosts();
     const post = list.find(p => p.id === postId);
     if (!post) return null;
 
+    const normType: 'keren' | 'suka' | 'seger' | 'semangat' = 
+      reactionType === 'berkah' ? 'keren' : 
+      reactionType === 'masyaallah' ? 'suka' : reactionType;
+
     if (!post.reactions) {
-      post.reactions = { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 };
+      post.reactions = { keren: 0, suka: 0, seger: 0, semangat: 0 };
+    } else {
+      post.reactions.keren = post.reactions.keren ?? post.reactions.berkah ?? 0;
+      post.reactions.suka = post.reactions.suka ?? post.reactions.masyaallah ?? 0;
+      post.reactions.seger = post.reactions.seger ?? 0;
+      post.reactions.semangat = post.reactions.semangat ?? 0;
     }
 
-    if (post.userReaction === reactionType) {
+    let currentUserReaction = post.userReaction;
+    if (currentUserReaction === 'berkah') currentUserReaction = 'keren';
+    if (currentUserReaction === 'masyaallah') currentUserReaction = 'suka';
+
+    if (currentUserReaction === normType) {
       // Toggle off
-      post.reactions[reactionType] = Math.max(0, post.reactions[reactionType] - 1);
+      post.reactions[normType] = Math.max(0, (post.reactions[normType] || 0) - 1);
       post.userReaction = null;
     } else {
       // Toggle on or switch
-      if (post.userReaction) {
-        post.reactions[post.userReaction] = Math.max(0, post.reactions[post.userReaction] - 1);
+      if (currentUserReaction) {
+        const prevKey = currentUserReaction as 'keren' | 'suka' | 'seger' | 'semangat';
+        post.reactions[prevKey] = Math.max(0, (post.reactions[prevKey] || 0) - 1);
       }
-      post.reactions[reactionType] = (post.reactions[reactionType] || 0) + 1;
-      post.userReaction = reactionType;
+      post.reactions[normType] = (post.reactions[normType] || 0) + 1;
+      post.userReaction = normType;
     }
 
     this.saveCommunityPosts(list);

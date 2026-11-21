@@ -42,12 +42,15 @@ const CATEGORIES = [
   { id: 'ternak', label: 'Ternak', icon: 'egg' },
   { id: 'dapur', label: 'Dapur', icon: 'utensils' },
   { id: 'apotek', label: 'Apotek', icon: 'pill' },
-  { id: 'sedekah', label: 'Sedekah', icon: 'heart-handshake' },
+  { id: 'berbagi', label: 'Berbagi', icon: 'heart-handshake' },
   { id: 'rpp', label: 'RPP', icon: 'package' }
 ];
 
 const filteredPosts = computed(() => {
   if (selectedCategory.value === 'all') return posts.value;
+  if (selectedCategory.value === 'berbagi') {
+    return posts.value.filter(p => p.category === 'berbagi' || (p.category as string) === 'sedekah');
+  }
   return posts.value.filter(p => p.category === selectedCategory.value);
 });
 
@@ -67,7 +70,7 @@ const loadPostsFromTurso = async () => {
   }
 };
 
-const handleReaction = async (post: CommunityPostItem, type: 'berkah' | 'masyaallah' | 'seger' | 'semangat') => {
+const handleReaction = async (post: CommunityPostItem, type: 'keren' | 'suka' | 'seger' | 'semangat') => {
   // Optimistic update
   const res = StorageService.toggleReactionLocal(post.id, type);
   if (res) {
@@ -104,7 +107,7 @@ const formatRelativeTime = (isoString?: string) => {
 };
 
 // ============================================================================
-// 2. SUB-TAB: LIGA BERKAH (FASTABIQUL KHAIRAT)
+// 2. SUB-TAB: LIGA PEKARANGAN (KOMPETISI POSITIF)
 // ============================================================================
 const leagueTier = ref<'keluarga' | 'ranting' | 'mwc'>('keluarga');
 const familyLeaderboard = ref<FamilyLeaderboardItem[]>([]);
@@ -307,29 +310,29 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Post Footer: Reaksi Doa NU & Sapa WA -->
+          <!-- Post Footer: Reaksi & Sapa WA -->
           <div class="feed-actions">
             <div class="reaction-buttons-group">
               <button 
                 type="button" 
                 class="react-btn active:scale-95 transition-transform" 
-                :class="{ active: post.userReaction === 'berkah' }"
-                @click="handleReaction(post, 'berkah')"
+                :class="{ active: post.userReaction === 'keren' || post.userReaction === 'berkah' }"
+                @click="handleReaction(post, 'keren')"
               >
                 <AppIcon name="sparkles" size="xs" />
-                <span class="react-label">Berkah</span>
-                <span class="react-count font-mono">{{ post.reactions?.berkah || 0 }}</span>
+                <span class="react-label">Keren</span>
+                <span class="react-count font-mono">{{ (post.reactions?.keren ?? post.reactions?.berkah) || 0 }}</span>
               </button>
 
               <button 
                 type="button" 
                 class="react-btn active:scale-95 transition-transform" 
-                :class="{ active: post.userReaction === 'masyaallah' }"
-                @click="handleReaction(post, 'masyaallah')"
+                :class="{ active: post.userReaction === 'suka' || post.userReaction === 'masyaallah' }"
+                @click="handleReaction(post, 'suka')"
               >
                 <AppIcon name="heart" size="xs" />
-                <span class="react-label">MasyaAllah</span>
-                <span class="react-count font-mono">{{ post.reactions?.masyaallah || 0 }}</span>
+                <span class="react-label">Suka</span>
+                <span class="react-count font-mono">{{ (post.reactions?.suka ?? post.reactions?.masyaallah) || 0 }}</span>
               </button>
 
               <button 
@@ -350,7 +353,7 @@ onMounted(() => {
                 @click="handleReaction(post, 'semangat')"
               >
                 <AppIcon name="flame" size="xs" />
-                <span class="react-label">Giat</span>
+                <span class="react-label">Semangat</span>
                 <span class="react-count font-mono">{{ post.reactions?.semangat || 0 }}</span>
               </button>
             </div>
@@ -388,7 +391,7 @@ onMounted(() => {
     </div>
 
     <!-- ===================================================================== -->
-    <!-- VIEW 2: LIGA BERKAH (FASTABIQUL KHAIRAT)                              -->
+    <!-- VIEW 2: LIGA PEKARANGAN (KOMPETISI KELUARGA, RANTING & MWC)           -->
     <!-- ===================================================================== -->
     <div v-else-if="activeSubTab === 'liga'" class="subtab-content">
       <!-- Tier Selector: Keluarga, Ranting, MWC -->
@@ -443,7 +446,7 @@ onMounted(() => {
 
       <!-- Loading State -->
       <div v-if="loadingLeaderboard" class="py-6 text-center text-xs text-neutral-500 font-medium">
-        Menghitung poin Fastabiqul Khairat dari Turso...
+        Menghitung peringkat pekarangan dari database...
       </div>
 
       <!-- 1. TIER KELUARGA -->
@@ -576,7 +579,7 @@ onMounted(() => {
       <div class="scoring-info-box card">
         <div class="scoring-title flex items-center gap-1.5">
           <AppIcon name="sparkles" size="xs" class="text-emerald-600" />
-          <span>Aturan Poin Fastabiqul Khairat</span>
+          <span>Aturan Poin Liga Pekarangan</span>
         </div>
         <div class="scoring-grid">
           <div class="scoring-item">
@@ -1095,7 +1098,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* LIGA BERKAH STYLES */
+/* LIGA PEKARANGAN STYLES */
 .tier-buttons {
   display: flex;
   gap: 4px;
