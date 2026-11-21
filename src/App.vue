@@ -13,7 +13,7 @@ import CommunityHub from './components/CommunityHub.vue';
 import RecordHub from './components/RecordHub.vue';
 import ProfileView from './components/ProfileView.vue';
 import OnboardingSetup from './components/OnboardingSetup.vue';
-import PostCaptureModal from './components/PostCaptureModal.vue';
+import InAppCameraModal from './components/InAppCameraModal.vue';
 import { SecurityService } from './services/security';
 
 // Survey Step Components (Fase 1)
@@ -55,27 +55,13 @@ const isSubmitting = ref(false);
 const isGeoLoading = ref(false);
 const isCameraLoading = ref(false);
 
-// Modals & Camera State
+// Modals & In-App Camera State
 const showQueueModal = ref(false);
-const bottomNavRef = ref<InstanceType<typeof AppBottomNav> | null>(null);
-const capturedPhoto = ref<string>('');
-const showPostCaptureModal = ref(false);
+const showInAppCamera = ref(false);
 const communityRefreshKey = ref(0);
 
-const onPhotoCaptured = (dataUrl: string) => {
-  capturedPhoto.value = dataUrl;
-  showPostCaptureModal.value = true;
-};
-
-const onRetakePhoto = () => {
-  showPostCaptureModal.value = false;
-  setTimeout(() => {
-    bottomNavRef.value?.triggerCamera();
-  }, 150);
-};
-
 const onPostCreated = () => {
-  showPostCaptureModal.value = false;
+  showInAppCamera.value = false;
   communityRefreshKey.value++;
   activeNavTab.value = 'community';
 };
@@ -547,7 +533,7 @@ onMounted(() => {
         :key="'comm-' + communityRefreshKey"
         @show-toast="showToast"
         @go-to-profile="activeNavTab = 'profile'"
-        @open-create-post="bottomNavRef?.triggerCamera()"
+        @open-create-post="showInAppCamera = true"
       />
 
       <!-- 2. CATAT (PUSAT PENCATATAN PEKARANGAN) -->
@@ -608,7 +594,6 @@ onMounted(() => {
 
     <!-- Fixed Bottom Navigation Bar (Tombol tengah kamera melayang / Lanjut-Simpan saat survei) -->
     <AppBottomNav 
-      ref="bottomNavRef"
       :active-tab="activeNavTab === 'survey' ? 'record' : activeNavTab"
       :survey-queue-count="syncQueue.length"
       :is-survey-mode="activeNavTab === 'survey'"
@@ -617,16 +602,14 @@ onMounted(() => {
       @change-tab="(tab) => activeNavTab = tab"
       @next-step="nextStep"
       @submit-survey="submitForm"
-      @photo-captured="onPhotoCaptured"
-      @camera-error="(msg) => showToast(msg, 'error')"
+      @open-camera="showInAppCamera = true"
     />
 
-    <!-- Modal Jepret & Beri Caption -->
-    <PostCaptureModal 
-      :show="showPostCaptureModal"
-      :photo-url="capturedPhoto"
-      @close="showPostCaptureModal = false"
-      @retake="onRetakePhoto"
+    <!-- Kamera Bawaan Langsung di Aplikasi & Modal Caption -->
+    <InAppCameraModal 
+      v-if="showInAppCamera"
+      :show="showInAppCamera"
+      @close="showInAppCamera = false"
       @post-created="onPostCreated"
       @show-toast="showToast"
     />

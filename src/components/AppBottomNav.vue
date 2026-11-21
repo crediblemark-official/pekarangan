@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { CameraService } from '../services/camera';
-
 export type AppNavTab = 'home' | 'record' | 'community' | 'profile';
 
 const props = defineProps<{
@@ -16,33 +13,8 @@ const emit = defineEmits<{
   (e: 'changeTab', tab: AppNavTab): void;
   (e: 'nextStep'): void;
   (e: 'submitSurvey'): void;
-  (e: 'photoCaptured', dataUrl: string): void;
-  (e: 'cameraError', message: string): void;
+  (e: 'openCamera'): void;
 }>();
-
-const cameraInputRef = ref<HTMLInputElement | null>(null);
-
-const triggerCamera = () => {
-  if (cameraInputRef.value) {
-    cameraInputRef.value.click();
-  }
-};
-
-const handleFileChange = async (e: Event) => {
-  const file = (e.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-
-  try {
-    const res = await CameraService.compressImage(file, 960, 720, 0.65);
-    emit('photoCaptured', res.dataUrl);
-  } catch (err: any) {
-    emit('cameraError', err.message || 'Gagal memproses foto dari kamera.');
-  } finally {
-    if (cameraInputRef.value) {
-      cameraInputRef.value.value = '';
-    }
-  }
-};
 
 const handleSurveyClick = () => {
   if (props.currentStep === 4) {
@@ -51,10 +23,6 @@ const handleSurveyClick = () => {
     emit('nextStep');
   }
 };
-
-defineExpose({
-  triggerCamera
-});
 </script>
 
 <template>
@@ -87,7 +55,7 @@ defineExpose({
       </span>
     </button>
 
-    <!-- 3. TOMBOL TENGAH JEPRET KAMERA / SURVEY ACTION -->
+    <!-- 3. TOMBOL TENGAH KAMERA BAWAAN APLIKASI / SURVEY ACTION -->
     <div class="center-camera-wrapper">
       <!-- Tombol saat mode survei (Fase 1) -->
       <button 
@@ -103,13 +71,13 @@ defineExpose({
         <span class="survey-center-label">{{ currentStep === 4 ? 'Simpan' : 'Lanjut' }}</span>
       </button>
 
-      <!-- Tombol Jepret Kamera Utama -->
+      <!-- Tombol Kamera Bawaan Aplikasi -->
       <button 
         v-else
         type="button" 
         class="camera-center-btn"
-        @click="triggerCamera"
-        title="Jepret Foto Pekarangan Langsung"
+        @click="$emit('openCamera')"
+        title="Buka Kamera Bawaan Pekarangan"
       >
         <svg class="camera-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
@@ -117,16 +85,6 @@ defineExpose({
         </svg>
         <span class="camera-plus-badge">+</span>
       </button>
-
-      <!-- Input file kamera tersembunyi yang langsung memicu kamera perangkat -->
-      <input 
-        ref="cameraInputRef"
-        type="file" 
-        accept="image/*" 
-        capture="environment" 
-        style="display: none;" 
-        @change="handleFileChange" 
-      />
     </div>
 
     <!-- 4. Community / Komunitas Warga -->
