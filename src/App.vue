@@ -607,11 +607,13 @@ onMounted(() => {
     />
 
     <!-- Auto-Install Prompt Modal for Direct PWA Installation -->
-    <InstallPromptModal 
-      v-if="showInstallModal"
-      @close="showInstallModal = false"
-      @installed="showInstallModal = false; showToast('Aplikasi Pekarangan berhasil dipasang!', 'success')"
-    />
+    <Teleport to="body">
+      <InstallPromptModal 
+        v-if="showInstallModal"
+        @close="showInstallModal = false"
+        @installed="showInstallModal = false; showToast('Aplikasi Pekarangan berhasil dipasang!', 'success')"
+      />
+    </Teleport>
 
     <!-- Toast Notification -->
     <div v-if="toast.show" class="toast-container">

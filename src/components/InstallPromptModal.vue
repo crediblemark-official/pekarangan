@@ -42,7 +42,7 @@ const handleInstallClick = async () => {
     } else if (result === 'dismissed') {
       installState.value = 'idle';
     } else {
-      // unsupported / prompt tidak tersedia otomatis
+      // Prompt otomatis tidak didukung / ditahan browser -> tampilkan panduan manual
       showManualGuide.value = true;
       installState.value = 'manual';
     }
@@ -54,62 +54,72 @@ const handleInstallClick = async () => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn">
-    <div class="w-full max-w-sm bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-100 space-y-4 text-center">
-      
+  <div class="pwa-install-overlay" @click.self="emit('close')">
+    <div class="pwa-install-dialog">
+      <!-- Close Button (Top Right) -->
+      <button 
+        type="button" 
+        class="pwa-close-btn" 
+        @click="emit('close')"
+        title="Tutup"
+        aria-label="Tutup"
+      >
+        ✕
+      </button>
+
       <!-- 1. SUCCESS STATE: Aplikasi Sudah Terpasang -->
-      <div v-if="installState === 'success' || isInstalled" class="space-y-4 py-2">
-        <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
+      <div v-if="installState === 'success' || isInstalled" class="pwa-content-flow">
+        <div class="pwa-success-badge">
           <AppIcon name="check" size="lg" color="#15803d" />
         </div>
-        <div class="space-y-1">
-          <h3 class="text-lg font-black text-slate-900 tracking-tight">Aplikasi Berhasil Dipasang!</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">
+        <div class="pwa-text-group">
+          <h3 class="pwa-dialog-title">Aplikasi Berhasil Dipasang!</h3>
+          <p class="pwa-dialog-desc">
             Ikon <strong>Pekarangan</strong> kini sudah aktif di layar utama HP Anda. Buka melalui ikon tersebut untuk pengalaman offline-first penuh.
           </p>
         </div>
         <button
           type="button"
           @click="emit('close')"
-          class="w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white font-bold text-sm shadow-md transition cursor-pointer"
+          class="btn-pwa-primary"
         >
           Buka Pekarangan
         </button>
       </div>
 
-      <!-- 2. IN-APP BROWSER WARNING (WhatsApp, Telegram, IG, dll) -->
-      <div v-else-if="isInAppBrowser" class="space-y-4">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center">
-          <AppIcon name="alert-triangle" size="md" color="#92400e" />
+      <!-- 2. IN-APP BROWSER (WhatsApp, Telegram, IG, dll) -->
+      <div v-else-if="isInAppBrowser" class="pwa-content-flow">
+        <div class="pwa-warning-badge">
+          ⚠️
         </div>
-        <div class="space-y-1 text-center">
-          <h3 class="text-base font-black text-slate-900">Buka di Browser Utama</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Aplikasi obrolan mengunci fitur pemasangan aplikasi. Untuk memasang Pekarangan ke layar HP:
+        <div class="pwa-text-group">
+          <h3 class="pwa-dialog-title">Buka di Browser Utama</h3>
+          <p class="pwa-dialog-desc">
+            Aplikasi obrolan membatasi fitur pemasangan PWA langsung. Untuk memasang ke layar HP:
           </p>
         </div>
-        <div class="bg-amber-50 rounded-xl p-3 text-left border border-amber-200 text-xs text-amber-900 space-y-1.5">
-          <p class="font-bold">Langkah mudah:</p>
-          <ol class="list-decimal pl-4 space-y-1 text-slate-700">
-            <li>Ketuk menu <strong>titik tiga (⋮)</strong> di pojok kanan atas browser ini.</li>
-            <li>Pilih <strong>"Buka di Browser"</strong> atau <strong>"Open in Chrome / Safari"</strong>.</li>
+        <div class="pwa-guide-box">
+          <p class="pwa-guide-label">Langkah mudah:</p>
+          <ol class="pwa-guide-list">
+            <li>Ketuk menu <strong>titik tiga (⋮)</strong> di pojok browser ini.</li>
+            <li>Pilih <strong>"Buka di Browser"</strong> (Chrome / Safari).</li>
             <li>Setelah terbuka di browser utama, pasang langsung dari sana.</li>
           </ol>
         </div>
-        <div class="pt-1 flex flex-col gap-2">
+        <div class="pwa-action-stack">
           <a
             href="https://github.com/crediblemark-official/pekarangan/releases/tag/v2.1.0"
             target="_blank"
             rel="noopener noreferrer"
-            class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition inline-flex items-center justify-center gap-1.5"
+            class="btn-pwa-dark"
           >
             <AppIcon name="download" size="xs" color="#ffffff" />
-            <span>Atau Unduh File APK Android Langsung</span>
+            <span>Unduh File APK Android</span>
           </a>
           <button
             type="button"
             @click="emit('close')"
-            class="w-full py-2 text-slate-400 text-xs hover:text-slate-600"
+            class="btn-pwa-ghost"
           >
             Tutup
           </button>
@@ -117,67 +127,63 @@ const handleInstallClick = async () => {
       </div>
 
       <!-- 3. iOS SAFARI INSTRUCTIONS -->
-      <div v-else-if="isIos" class="space-y-4">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100">
-          <img src="/pwa-192x192.png" alt="Pekarangan" class="w-12 h-12 rounded-xl object-cover" />
-        </div>
-        <div class="space-y-1">
-          <h3 class="text-base font-black text-slate-900">Pasang di iPhone / iPad</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">
+      <div v-else-if="isIos" class="pwa-content-flow">
+        <img src="/pwa-192x192.png" alt="Pekarangan" class="pwa-app-icon" />
+        <div class="pwa-text-group">
+          <h3 class="pwa-dialog-title">Pasang di iPhone / iPad</h3>
+          <p class="pwa-dialog-desc">
             Gunakan fitur bawaan Safari untuk memasang Pekarangan ke layar utama:
           </p>
         </div>
-        <div class="bg-slate-50 rounded-xl p-3 text-left border border-slate-200 text-xs text-slate-700 space-y-1.5">
-          <ol class="list-decimal pl-4 space-y-1.5">
-            <li>Ketuk tombol <strong>Bagikan (Share)</strong> — ikon kotak dengan panah ke atas di bilah bawah Safari.</li>
-            <li>Gulir ke bawah dan ketuk <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong>.</li>
-            <li>Ketuk <strong>"Tambah" (Add)</strong> di pojok kanan atas. Selesai!</li>
+        <div class="pwa-guide-box">
+          <ol class="pwa-guide-list">
+            <li>Ketuk tombol <strong>Bagikan (Share)</strong> — ikon kotak panah ke atas di bilah Safari.</li>
+            <li>Gulir ke bawah dan ketuk <strong>"Tambahkan ke Layar Utama"</strong>.</li>
+            <li>Ketuk <strong>"Tambah"</strong> di pojok kanan atas.</li>
           </ol>
         </div>
         <button
           type="button"
           @click="emit('close')"
-          class="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-sm transition"
+          class="btn-pwa-primary"
         >
-          Saya Mengerti, Masuk Aplikasi
+          Saya Mengerti
         </button>
       </div>
 
-      <!-- 4. MANUAL FALLBACK (Jika browser menolak / cooldown / Firefox / browser desktop) -->
-      <div v-else-if="installState === 'manual' || showManualGuide" class="space-y-4">
-        <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100">
-          <img src="/pwa-192x192.png" alt="Pekarangan" class="w-12 h-12 rounded-xl object-cover" />
-        </div>
-        <div class="space-y-1">
-          <h3 class="text-base font-black text-slate-900">Pasang Aplikasi ke HP</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">
+      <!-- 4. MANUAL FALLBACK (Jika browser menolak / cooldown / Desktop) -->
+      <div v-else-if="installState === 'manual' || showManualGuide" class="pwa-content-flow">
+        <img src="/pwa-192x192.png" alt="Pekarangan" class="pwa-app-icon" />
+        <div class="pwa-text-group">
+          <h3 class="pwa-dialog-title">Pasang Aplikasi Pekarangan</h3>
+          <p class="pwa-dialog-desc">
             Browser Anda mengunci dialog otomatis. Pasang manual dalam 2 detik:
           </p>
         </div>
-        <div class="bg-slate-50 rounded-xl p-3.5 text-left border border-slate-200 text-xs text-slate-800 space-y-2">
-          <div class="flex items-start gap-2">
-            <span class="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center shrink-0 font-bold text-[10px]">1</span>
-            <p>Ketuk menu <strong>titik tiga (⋮)</strong> di pojok kanan atas browser Chrome Anda.</p>
+        <div class="pwa-guide-steps">
+          <div class="pwa-step-item">
+            <span class="pwa-step-num">1</span>
+            <p>Ketuk menu <strong>titik tiga (⋮)</strong> atau ikon install (💻⬇️) di bilah atas browser.</p>
           </div>
-          <div class="flex items-start gap-2">
-            <span class="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center shrink-0 font-bold text-[10px]">2</span>
+          <div class="pwa-step-item">
+            <span class="pwa-step-num">2</span>
             <p>Pilih menu <strong>"Instal aplikasi"</strong> atau <strong>"Tambahkan ke Layar utama"</strong>.</p>
           </div>
         </div>
-        <div class="space-y-2 pt-1">
+        <div class="pwa-action-stack">
           <a
             href="https://github.com/crediblemark-official/pekarangan/releases/tag/v2.1.0"
             target="_blank"
             rel="noopener noreferrer"
-            class="w-full min-h-[44px] py-2.5 rounded-xl bg-slate-900 hover:bg-black active:scale-[0.98] text-white font-bold text-xs transition inline-flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            class="btn-pwa-dark"
           >
             <AppIcon name="download" size="xs" color="#ffffff" />
-            <span>Atau Unduh File APK Android Resmi</span>
+            <span>Unduh File APK Android Resmi</span>
           </a>
           <button
             type="button"
             @click="emit('close')"
-            class="w-full py-2 text-slate-500 font-semibold text-xs hover:text-slate-800 transition"
+            class="btn-pwa-ghost"
           >
             Lanjut Menggunakan Versi Web
           </button>
@@ -185,41 +191,37 @@ const handleInstallClick = async () => {
       </div>
 
       <!-- 5. DEFAULT PROMPT (Direct 1-Click Install via beforeinstallprompt) -->
-      <div v-else class="space-y-4">
-        <div class="w-16 h-16 mx-auto rounded-2xl overflow-hidden shadow-md border border-slate-100 bg-emerald-50 flex items-center justify-center">
-          <img src="/pwa-192x192.png" alt="Pekarangan" class="w-full h-full object-cover" />
-        </div>
+      <div v-else class="pwa-content-flow">
+        <img src="/pwa-192x192.png" alt="Pekarangan" class="pwa-app-icon" />
 
-        <div class="space-y-1.5">
-          <h3 class="text-lg font-black text-slate-900 tracking-tight">Pasang Aplikasi Pekarangan</h3>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            Pasang langsung ke layar utama HP Anda. Berjalan offline tanpa kuota internet &amp; bebas iklan.
+        <div class="pwa-text-group">
+          <h3 class="pwa-dialog-title">Pasang Aplikasi Pekarangan</h3>
+          <p class="pwa-dialog-desc">
+            Pasang langsung ke layar utama HP Anda. Berjalan 100% offline tanpa kuota internet &amp; bebas iklan.
           </p>
         </div>
 
-        <!-- Highlight badges -->
-        <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 space-y-1.5 text-left border border-slate-100 font-medium">
-          <div class="flex items-center gap-2">
+        <div class="pwa-benefits-box">
+          <div class="pwa-benefit-item">
             <AppIcon name="check" size="xs" color="#15803d" />
-            <span>100% Offline-ready (catat panen tanpa sinyal)</span>
+            <span>100% Offline (catat panen tanpa sinyal)</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="pwa-benefit-item">
             <AppIcon name="check" size="xs" color="#15803d" />
-            <span>Sangat ringan (~2MB) &amp; tanpa Play Store</span>
+            <span>Sangat ringan (~2MB), tanpa Play Store</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="pwa-benefit-item">
             <AppIcon name="check" size="xs" color="#15803d" />
-            <span>Gratis selamanya, privasi tersimpan di HP</span>
+            <span>Gratis selamanya, privasi aman di HP</span>
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="space-y-2 pt-1">
+        <div class="pwa-action-stack">
           <button
             type="button"
             @click="handleInstallClick"
             :disabled="installState === 'installing'"
-            class="w-full min-h-[46px] py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-[0.98] text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            class="btn-pwa-primary"
           >
             <AppIcon name="download" size="sm" color="#ffffff" />
             <span>{{ installState === 'installing' ? 'Menyiapkan...' : 'Pasang Sekarang ke HP' }}</span>
@@ -228,7 +230,7 @@ const handleInstallClick = async () => {
           <button
             type="button"
             @click="emit('close')"
-            class="w-full py-2.5 rounded-xl hover:bg-slate-100 text-slate-500 font-semibold text-xs transition cursor-pointer"
+            class="btn-pwa-ghost"
           >
             Lanjut Menggunakan di Web Saja
           </button>
@@ -240,11 +242,322 @@ const handleInstallClick = async () => {
 </template>
 
 <style scoped>
-@keyframes fadeIn {
+/* Fullscreen Backdrop Overlay */
+.pwa-install-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: pwaFadeIn 0.2s ease-out;
+}
+
+/* Modal Card */
+.pwa-install-dialog {
+  position: relative;
+  background: #ffffff;
+  width: 100%;
+  max-width: 375px;
+  border-radius: 24px;
+  padding: 24px 20px 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  text-align: center;
+  box-sizing: border-box;
+  animation: pwaPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Close Button */
+.pwa-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.pwa-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Content Flow */
+.pwa-content-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+/* App Icon Image */
+.pwa-app-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  margin: 4px auto 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+  display: block;
+  border: 1px solid #f1f5f9;
+}
+
+/* Badges */
+.pwa-success-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px auto 0;
+}
+
+.pwa-warning-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #fef3c7;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px auto 0;
+}
+
+/* Typography */
+.pwa-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.pwa-dialog-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.pwa-dialog-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Benefits Box */
+.pwa-benefits-box {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.pwa-benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+/* Guide Box */
+.pwa-guide-box {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.pwa-guide-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.pwa-guide-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.76rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* 2-Step Guide */
+.pwa-guide-steps {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.pwa-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.pwa-step-item p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.pwa-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #15803d;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Action Buttons Stack */
+.pwa-action-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* Buttons */
+.btn-pwa-primary {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  background: #15803d;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25);
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.btn-pwa-primary:hover {
+  background: #166534;
+}
+
+.btn-pwa-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-pwa-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-pwa-dark {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 16px;
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  border-radius: 14px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.btn-pwa-dark:hover {
+  background: #000000;
+}
+
+.btn-pwa-dark:active {
+  transform: scale(0.98);
+}
+
+.btn-pwa-ghost {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: color 0.15s ease;
+}
+
+.btn-pwa-ghost:hover {
+  color: #0f172a;
+}
+
+/* Animations */
+@keyframes pwaFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
+
+@keyframes pwaPop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 </style>
