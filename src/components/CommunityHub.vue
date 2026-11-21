@@ -278,14 +278,16 @@ onMounted(() => {
                 <span v-if="post.authorPhone === settings.phone" class="self-tag">Saya</span>
               </div>
               <div class="feed-yard-sub">
-                <span v-if="post.yardName" class="inline-flex items-center gap-0.5">
-                  <AppIcon name="home" size="xs" class="text-emerald-600 inline" />
-                  <span>{{ post.yardName }}</span>
-                  <span class="dot-sep">•</span>
-                </span>
-                <span>{{ post.ranting }}</span>
-                <span class="dot-sep">•</span>
-                <span class="feed-time font-mono">{{ formatRelativeTime(post.createdAt) }}</span>
+                <template v-if="post.yardName">
+                  <span class="yard-badge">
+                    <AppIcon name="home" size="xs" color="#16a34a" />
+                    <span>{{ post.yardName }}</span>
+                  </span>
+                  <span class="sub-sep">•</span>
+                </template>
+                <span class="yard-zone">{{ post.ranting }}</span>
+                <span class="sub-sep">•</span>
+                <span class="yard-time">{{ formatRelativeTime(post.createdAt) }}</span>
               </div>
             </div>
             <div v-if="post.metricBadge" class="feed-metric-pill font-mono">
@@ -957,40 +959,82 @@ onMounted(() => {
 .feed-author-meta {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
 }
 
 .feed-author-row {
   display: flex;
   align-items: center;
   gap: 6px;
+  line-height: 1.25;
 }
 
 .feed-author-name {
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   font-weight: 700;
-  color: var(--text-main, #1e293b);
+  color: #0f172a;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .self-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.58rem;
+  line-height: 1;
   background: #16a34a;
-  color: #fff;
+  color: #ffffff;
   font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 2px 5px;
+  border-radius: 4px;
 }
 
 .feed-yard-sub {
-  font-size: 0.7rem;
-  color: var(--text-dim, #64748b);
-  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: #64748b;
 }
 
-.dot-sep {
-  margin: 0 3px;
+.yard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 1.2;
+  color: #475569;
+}
+
+.yard-zone {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  color: #64748b;
+}
+
+.sub-sep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.yard-time {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  color: #94a3b8;
 }
 
 .feed-metric-pill {
