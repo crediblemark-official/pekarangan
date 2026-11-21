@@ -658,13 +658,6 @@ onBeforeUnmount(() => {
   overflow-y: auto;
 }
 
-@media (prefers-color-scheme: dark) {
-  .caption-sheet {
-    background: #0f172a;
-    color: #f8fafc;
-  }
-}
-
 .caption-sheet::before {
   content: '';
   display: block;
@@ -683,23 +676,11 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #f1f5f9;
 }
 
-@media (prefers-color-scheme: dark) {
-  .sheet-top-row {
-    border-bottom-color: #1e293b;
-  }
-}
-
 .sheet-heading {
   font-weight: 700;
   font-size: 0.95rem;
   color: #0f172a;
   letter-spacing: -0.01em;
-}
-
-@media (prefers-color-scheme: dark) {
-  .sheet-heading {
-    color: #f1f5f9;
-  }
 }
 
 .sheet-subheading {
@@ -729,12 +710,6 @@ onBeforeUnmount(() => {
   background: #090d16;
   border: none;
   max-height: 360px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .preview-box {
-    border-color: transparent;
-  }
 }
 
 .preview-img {
@@ -802,26 +777,10 @@ onBeforeUnmount(() => {
   transition: all 0.12s ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  .cat-chip {
-    background: #1e293b;
-    border-color: #334155;
-    color: #cbd5e1;
-  }
-}
-
 .cat-chip.active {
   background: #dcfce7;
   border-color: #86efac;
   color: #15803d;
-}
-
-@media (prefers-color-scheme: dark) {
-  .cat-chip.active {
-    background: #064e3b;
-    border-color: #059669;
-    color: #6ee7b7;
-  }
 }
 
 .caption-input-box {
@@ -840,14 +799,6 @@ onBeforeUnmount(() => {
   font-family: inherit;
   box-sizing: border-box;
   background: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  .caption-textarea {
-    background: #1e293b;
-    border-color: #334155;
-    color: #f1f5f9;
-  }
 }
 
 .caption-textarea:focus {
@@ -880,27 +831,12 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  .sug-chip {
-    background: #1e293b;
-    border-color: #334155;
-    color: #94a3b8;
-  }
-}
-
 .mamasar-box {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   border-radius: 8px;
   padding: 6px 10px;
   margin-bottom: 10px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .mamasar-box {
-    background: #064e3b/30;
-    border-color: #065f46;
-  }
 }
 
 .mamasar-label {
@@ -911,12 +847,6 @@ onBeforeUnmount(() => {
   font-weight: 600;
   color: #166534;
   cursor: pointer;
-}
-
-@media (prefers-color-scheme: dark) {
-  .mamasar-label {
-    color: #86efac;
-  }
 }
 
 .sheet-actions {
@@ -934,14 +864,6 @@ onBeforeUnmount(() => {
   color: #475569;
   border: 1px solid #e2e8f0;
   cursor: pointer;
-}
-
-@media (prefers-color-scheme: dark) {
-  .btn-sheet-cancel {
-    background: #1e293b;
-    border-color: #334155;
-    color: #cbd5e1;
-  }
 }
 
 .btn-sheet-submit {

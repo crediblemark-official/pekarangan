@@ -834,12 +834,6 @@ onMounted(() => {
   gap: 3px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .segmented-control {
-    background: #1e293b;
-  }
-}
-
 .seg-btn {
   flex: 1;
   display: flex;
@@ -861,13 +855,6 @@ onMounted(() => {
   background: #ffffff;
   color: #166534;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
-
-@media (prefers-color-scheme: dark) {
-  .seg-btn.active {
-    background: #0f172a;
-    color: #4ade80;
-  }
 }
 
 .seg-badge {
@@ -903,12 +890,6 @@ onMounted(() => {
   display: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  .category-chips-scroll {
-    border-bottom-color: #1e293b;
-  }
-}
-
 .cat-chip {
   display: inline-flex;
   align-items: center;
@@ -940,12 +921,6 @@ onMounted(() => {
   background: #f8fafc;
 }
 
-@media (prefers-color-scheme: dark) {
-  .feed-stream {
-    background: #0b1120;
-  }
-}
-
 .feed-card {
   width: 100%;
   padding: 0;
@@ -955,13 +930,6 @@ onMounted(() => {
   background: #ffffff;
   border-bottom: 8px solid #f1f5f9;
   box-shadow: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .feed-card {
-    background: #0f172a;
-    border-bottom: 8px solid #0b1120;
-  }
 }
 
 .feed-header {
@@ -1048,24 +1016,12 @@ onMounted(() => {
   line-height: 1.35;
 }
 
-@media (prefers-color-scheme: dark) {
-  .feed-title {
-    color: #f1f5f9;
-  }
-}
-
 .feed-text {
   font-size: 0.82rem;
   color: #334155;
   line-height: 1.45;
   margin: 0;
   word-break: break-word;
-}
-
-@media (prefers-color-scheme: dark) {
-  .feed-text {
-    color: #cbd5e1;
-  }
 }
 
 /* PHOTO BOX - TRUE FULL EDGE BLEED */
@@ -1075,7 +1031,7 @@ onMounted(() => {
   padding: 0;
   border-radius: 0;
   border: none;
-  background: #020617;
+  background: #f1f5f9;
   overflow: hidden;
   position: relative;
   max-height: 560px;
