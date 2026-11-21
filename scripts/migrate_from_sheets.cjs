@@ -30,6 +30,21 @@ if (fs.existsSync(envPath)) {
   });
 }
 
+const TEST_IDS = new Set([
+  'MBR-TEST-ONBOARD',
+  'MBR-20260930-1731',
+  'MBR-20260930-6142',
+  'MBR-SITI-RAHMA',
+  'YRD-TEST-ONBOARD',
+  'YRD-20260930-1731',
+  'YRD-20260930-6142',
+  'YRD-SITI-RAHMA',
+  'LOG-20260930-1731',
+  'LOG-20260930-6142',
+  'LOG-20260930-3936',
+  'LOG-20260930-3292'
+]);
+
 function normalizePillarName(raw) {
   if (!raw) return '1. Rumah Pangan Mandiri (RPM)';
   const s = raw.toLowerCase();
@@ -72,6 +87,7 @@ async function runMigration() {
   const memberIds = new Set();
   for (const m of (d.members || [])) {
     const mId = m.member_id;
+    if (TEST_IDS.has(mId)) continue;
     memberIds.add(mId);
 
     const addr = (m.alamat_catatan || '').trim();
@@ -118,23 +134,11 @@ async function runMigration() {
     });
   }
 
-  // Cek apakah ada yard yang me-referensikan member yang belum ada
-  for (const y of (d.yards || [])) {
-    if (y.member_id && !memberIds.has(y.member_id)) {
-      await client.execute({
-        sql: `INSERT INTO tbl_anggota (member_id, nama_lengkap, nomor_wa, rt_rw) VALUES (?, ?, ?, ?)
-              ON CONFLICT(member_id) DO NOTHING`,
-        args: [y.member_id, `Keluarga ${y.member_id}`, '081200000000', '01/02']
-      });
-      memberIds.add(y.member_id);
-    }
-  }
-  console.log(`✓ tbl_anggota selesai (${memberIds.size} entitas).`);
-
   // 2. Migrasi Pekarangan
   console.log('\n3. Migrasi tbl_pekarangan...');
   const yardIds = new Set();
   for (const y of (d.yards || [])) {
+    if (TEST_IDS.has(y.yard_id) || TEST_IDS.has(y.member_id)) continue;
     yardIds.add(y.yard_id);
     await client.execute({
       sql: `INSERT INTO tbl_pekarangan (
@@ -281,6 +285,7 @@ async function runMigration() {
   // 7. Migrasi Log Aktivitas
   console.log('\n8. Migrasi tbl_log_aktivitas...');
   for (const log of (d.activityLogs || [])) {
+    if (TEST_IDS.has(log.id)) continue;
     await client.execute({
       sql: `INSERT INTO tbl_log_aktivitas (id, title, type, date, note) VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(id) DO NOTHING;`,
