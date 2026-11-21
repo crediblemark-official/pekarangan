@@ -203,6 +203,7 @@ const handleSapa = (post: CommunityPostItem) => {
 
 const refresh = () => {
   posts.value = StorageService.getCommunityPosts();
+  members.value = StorageService.getMembers();
   loadPostsFromTurso();
   loadLeaderboardStats();
 };
@@ -212,6 +213,7 @@ defineExpose({
 });
 
 onMounted(() => {
+  members.value = StorageService.getMembers();
   loadPostsFromTurso();
   loadLeaderboardStats();
 });

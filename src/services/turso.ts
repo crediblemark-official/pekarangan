@@ -452,12 +452,26 @@ export const TursoService = {
         assetsMap.get(yId)!.push(a);
       });
 
-      const members: CommunityMemberItem[] = membersRes.rows.map(m => {
+      // Map & deduplicate members
+      const seenPhone = new Set<string>();
+      const seenName = new Set<string>();
+      const members: CommunityMemberItem[] = [];
+
+      for (const m of membersRes.rows) {
+        const rawWa = String(m.nomor_wa || '').replace(/\D/g, '').replace(/^62/, '0');
+        const cleanName = String(m.nama_lengkap || '').trim().toLowerCase().replace(/\s*\./g, '');
+
+        if (rawWa && rawWa.length >= 8 && seenPhone.has(rawWa)) continue;
+        if (cleanName && seenName.has(cleanName)) continue;
+
+        if (rawWa && rawWa.length >= 8) seenPhone.add(rawWa);
+        if (cleanName) seenName.add(cleanName);
+
         const mId = String(m.member_id);
         const yard = yardsMap.get(mId);
         const yardAssets = yard ? (assetsMap.get(String(yard.yard_id)) || []) : [];
 
-        return {
+        members.push({
           id: mId,
           name: String(m.nama_lengkap || ''),
           phone: String(m.nomor_wa || ''),
@@ -475,8 +489,8 @@ export const TursoService = {
           joinedDate: m.created_at ? String(m.created_at).slice(0, 10) : 'Terdata',
           bio: 'Keluarga pekarangan mandiri pangan Warga NU.',
           yardName: `Pekarangan ${m.nama_lengkap}`
-        };
-      });
+        });
+      }
 
       const plants: PlantItem[] = plantsRes.rows.map(p => ({
         id: String(p.id),

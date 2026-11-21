@@ -480,7 +480,30 @@ export const StorageService = {
   getMembers(): CommunityMemberItem[] {
     try {
       const raw = localStorage.getItem(KEYS.MEMBERS);
-      return raw ? JSON.parse(raw) : [...SEED_MEMBERS];
+      const list: CommunityMemberItem[] = raw ? JSON.parse(raw) : [...SEED_MEMBERS];
+
+      // Deduplikasi anggota berdasarkan nomor WA atau nama unik
+      const seenPhone = new Set<string>();
+      const seenName = new Set<string>();
+      const uniqueList: CommunityMemberItem[] = [];
+
+      for (const m of list) {
+        const rawWa = (m.phone || '').replace(/\D/g, '').replace(/^62/, '0');
+        const cleanName = (m.name || '').trim().toLowerCase().replace(/\s*\./g, '');
+
+        if (rawWa && rawWa.length >= 8 && seenPhone.has(rawWa)) continue;
+        if (cleanName && seenName.has(cleanName)) continue;
+
+        if (rawWa && rawWa.length >= 8) seenPhone.add(rawWa);
+        if (cleanName) seenName.add(cleanName);
+
+        uniqueList.push(m);
+      }
+
+      if (uniqueList.length !== list.length) {
+        localStorage.setItem(KEYS.MEMBERS, JSON.stringify(uniqueList));
+      }
+      return uniqueList;
     } catch {
       return [...SEED_MEMBERS];
     }
@@ -500,15 +523,38 @@ export const StorageService = {
   getCommunityPosts(): CommunityPostItem[] {
     try {
       const raw = localStorage.getItem(KEYS.COMMUNITY_POSTS);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const posts: CommunityPostItem[] = JSON.parse(raw);
+        let changed = false;
+        posts.forEach(p => {
+          if (p.id === 'post-init-1' && (p.authorName === 'Rasyiqi' || p.title.includes('Alhamdulillah') || (p.content && p.content.includes('Alhamdulillah')))) {
+            p.authorName = 'Ahmad Fauzi';
+            p.authorPhone = '085183131249';
+            p.title = 'Panen Cabai Rawit & Bayam Hijau';
+            p.content = 'Pagi ini petik cabai rawit merah dan seikat bayam segar dari polybag pekarangan samping. Uang belanja dapur hari ini berhasil hemat Rp 15.000!';
+            p.metricBadge = 'Panen 1.2 kg';
+            changed = true;
+          }
+          if (p.id === 'post-init-2' && (p.content && (p.content.includes('Alhamdulillah') || p.content.includes('disedekahkan')))) {
+            p.content = 'Produksi telur ayam kandang produktif hari ini melimpah. Sebagian untuk sarapan anak-anak, sisanya dibagikan ke tetangga sekitar.';
+            p.metricBadge = '14 Butir Telur';
+            p.authorPhone = '087850440595';
+            changed = true;
+          }
+        });
+        if (changed) {
+          localStorage.setItem(KEYS.COMMUNITY_POSTS, JSON.stringify(posts));
+        }
+        return posts;
+      }
     } catch {}
     // Seed kabar perdana yang ramah & otentik
     const seedPosts: CommunityPostItem[] = [
       {
         id: 'post-init-1',
         authorId: 'MBR-153938',
-        authorName: 'Rasyiqi',
-        authorPhone: '081234567891',
+        authorName: 'Ahmad Fauzi',
+        authorPhone: '085183131249',
         yardName: 'Pekarangan Asri Gapura',
         ranting: 'Gapura Timur',
         mwcZone: 'MWC Gapura',
@@ -524,7 +570,7 @@ export const StorageService = {
         id: 'post-init-2',
         authorId: 'MBR-20261016-9253',
         authorName: 'Zainur Rahman Rafiki',
-        authorPhone: '081234567892',
+        authorPhone: '087850440595',
         yardName: 'Pekarangan Hijau Gapura',
         ranting: 'Gapura Timur',
         mwcZone: 'MWC Gapura',
