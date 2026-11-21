@@ -6,6 +6,7 @@ import { isTursoConfigured } from '../services/turso';
 import { SecurityService } from '../services/security';
 import type { AppSettings, CommunityMemberItem } from '../types';
 import { MWC_ZONES } from '../data/zones';
+import AppIcon from './AppIcon.vue';
 
 const emit = defineEmits<{
   (e: 'done'): void;
@@ -33,7 +34,7 @@ const isValid = computed(() => {
   );
 });
 
-// Otomatis cek jika nomor WA sudah pernah terdaftar saat nomor diketik lengkap (>= 10 digit)
+// Otomatis deteksi akun keluarga secara halus di latar belakang saat nomor WA diketik lengkap (>= 10 digit)
 let lookupTimeout: any = null;
 watch(() => form.phone, (newVal) => {
   const digits = newVal.replace(/\D/g, '');
@@ -41,7 +42,7 @@ watch(() => form.phone, (newVal) => {
     if (lookupTimeout) clearTimeout(lookupTimeout);
     lookupTimeout = setTimeout(() => {
       checkExistingAccount();
-    }, 500);
+    }, 400);
   } else {
     foundAccount.value = null;
   }
@@ -63,15 +64,21 @@ const checkExistingAccount = async () => {
     });
     if (res.status === 'success' && res.found && res.member) {
       foundAccount.value = res.member;
-      // Auto-fill nama dengan data yang ditemukan di database cloud
-      if (res.member.nama_lengkap) {
+      // Auto-fill jika kolom belum diisi user
+      if (res.member.nama_lengkap && !form.ownerName.trim()) {
         form.ownerName = res.member.nama_lengkap;
+      }
+      if (res.member.ranting && !form.ranting.trim()) {
+        form.ranting = res.member.ranting;
+      }
+      if (res.member.mwc_zone) {
+        form.mwcZone = res.member.mwc_zone;
       }
     } else {
       foundAccount.value = null;
     }
   } catch (err: any) {
-    console.warn('Gagal periksa akun:', err);
+    console.warn('Gagal periksa akun keluarga:', err);
   } finally {
     isCheckingAccount.value = false;
   }
@@ -85,6 +92,7 @@ const submitIdentity = async () => {
   const updatedSettings: AppSettings = {
     ...currentSettings,
     ownerName: form.ownerName.trim(),
+    yardName: currentSettings.yardName || 'Pekarangan Mandiri',
     phone: form.phone.trim(),
     mwcZone: form.mwcZone,
     ranting: form.ranting.trim(),
@@ -93,7 +101,7 @@ const submitIdentity = async () => {
 
   StorageService.saveSettings(updatedSettings);
 
-  // Perbarui atau tambahkan identitas pemilik perangkat ke direktori anggota lokal
+  // Perbarui atau tambahkan identitas keluarga ke direktori anggota lokal
   const members = StorageService.getMembers();
   const existingOwnerIdx = members.findIndex(m => m.isDeviceOwner);
   const memberId = foundAccount.value?.member_id || 
@@ -105,14 +113,14 @@ const submitIdentity = async () => {
     phone: form.phone.trim(),
     mwcZone: form.mwcZone,
     ranting: form.ranting.trim(),
-    rtRw: foundAccount.value?.rt_rw || currentSettings.defaultRtRw || '-',
+    rtRw: foundAccount.value?.rt_rw || currentSettings.defaultRtRw || '01/02',
     statusLahan: currentSettings.landStatus || 'Milik Sendiri',
     estimasiLuas: currentSettings.landArea || '10-30 m²',
     zonasi: ['Teras Depan', 'Pekarangan Samping'],
     komoditas: [],
     joinedDate: new Date().toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }),
-    bio: 'Pemilik pekarangan mandiri warga NU.',
-    yardName: currentSettings.yardName || 'Pekarangan Rumah',
+    bio: 'Keluarga penggiat pekarangan mandiri pangan.',
+    yardName: updatedSettings.yardName,
     isDeviceOwner: true
   };
 
@@ -123,13 +131,13 @@ const submitIdentity = async () => {
   }
   StorageService.saveMembers(members);
 
-  // Payload pendaftaran / penautan akun ke Google Sheets
+  // Payload pendaftaran identitas keluarga ke Cloud Database
   const accountPayload = {
     member_id: memberId,
     nama_lengkap: form.ownerName.trim(),
     nama_panggilan: form.ownerName.trim().split(' ')[0] || form.ownerName.trim(),
     nomor_wa: form.phone.trim(),
-    rt_rw: foundAccount.value?.rt_rw || currentSettings.defaultRtRw || '-',
+    rt_rw: foundAccount.value?.rt_rw || currentSettings.defaultRtRw || '01/02',
     alamat_catatan: foundAccount.value?.alamat_catatan || '-',
     device_id: deviceId
   };
@@ -170,85 +178,72 @@ const submitIdentity = async () => {
       <!-- Header -->
       <header class="onboarding-header">
         <div class="header-brand-row">
-          <div class="header-logo">🌱</div>
+          <div class="header-logo">
+            <AppIcon name="sprout" size="sm" color="#ffffff" />
+          </div>
           <div class="header-meta">
-            <span class="header-badge">SELAMAT DATANG</span>
-            <h1 class="header-title">Identitas Pemilik</h1>
+            <span class="header-badge">PEKARANGAN MANDIRI</span>
+            <h1 class="header-title">Pendaftaran Keluarga</h1>
           </div>
         </div>
         <p class="header-desc">
-          Cukup isi nama dan nomor HP Anda untuk mengaktifkan akun. Kebijakan sistem: 1 akun aktif di 1 perangkat HP.
+          Daftarkan identitas keluarga Anda untuk memulai pencatatan mandiri tanaman, ternak, dan panen pekarangan rumah.
         </p>
       </header>
 
       <!-- Account Recovery Banner (Jika Akun Ditemukan di Cloud) -->
-      <!-- Akun Ditemukan Banner -->
-      <div 
-        v-if="foundAccount" 
-        class="found-banner"
-      >
-        <div class="found-icon">📲</div>
+      <div v-if="foundAccount" class="found-banner">
+        <div class="found-icon">
+          <AppIcon name="user" size="sm" color="#16a34a" />
+        </div>
         <div class="found-info">
-          <div class="found-title">
-            Akun Terdaftar Ditemukan!
-          </div>
+          <div class="found-title">Akun Keluarga Terdaftar</div>
           <div class="found-desc">
-            Nomor ini terdaftar atas nama <strong>{{ foundAccount.nama_lengkap }}</strong>. Klik tombol di bawah untuk menyinkronkan data pekarangan warga.
+            Selamat datang kembali, <strong>{{ foundAccount.nama_lengkap }}</strong>! Data pekarangan Anda di <strong>{{ foundAccount.ranting || 'Gapura' }}</strong> siap disinkronkan.
           </div>
         </div>
       </div>
 
-      <!-- Form Body (HANYA Nama & Nomor HP) -->
+      <!-- Form Body -->
       <form class="onboarding-form" @submit.prevent="submitIdentity">
         <!-- Field 1: Nomor HP / WhatsApp -->
         <div class="field-group">
           <label class="field-label" for="owner-phone">
-            Nomor HP / WhatsApp <span class="required">*</span>
+            Nomor WhatsApp Keluarga <span class="required">*</span>
           </label>
-          <div class="input-with-action">
-            <input 
-              id="owner-phone"
-              v-model="form.phone"
-              type="tel" 
-              class="field-input" 
-              placeholder="Contoh: 081234567890"
-              required
-              autocomplete="tel"
-            />
-            <button 
-              type="button" 
-              class="check-btn" 
-              :disabled="isCheckingAccount || form.phone.trim().length < 9"
-              @click="checkExistingAccount"
-            >
-              <span v-if="isCheckingAccount">Cek...</span>
-              <span v-else>🔍 Cek</span>
-            </button>
-          </div>
+          <input 
+            id="owner-phone"
+            v-model="form.phone"
+            type="tel" 
+            class="field-input" 
+            placeholder="Contoh: 081234567890"
+            required
+            autocomplete="tel"
+          />
           <span class="field-hint">
-            Digunakan sebagai identitas akun Anda di Google Sheets.
+            Digunakan untuk silaturahmi sesama penggiat dan pemulihan data.
           </span>
         </div>
 
         <!-- Field 2: Nama Lengkap -->
         <div class="field-group">
           <label class="field-label" for="owner-name">
-            Nama Lengkap <span class="required">*</span>
+            Nama Kepala Keluarga / Pengelola <span class="required">*</span>
           </label>
           <input 
             id="owner-name"
             v-model="form.ownerName"
             type="text" 
             class="field-input" 
-            placeholder="Contoh: Budi Santoso"
+            placeholder="Contoh: Rasyiqi atau Bpk. Rasyiqi"
             required
             autocomplete="name"
           />
-          <span class="field-hint">Nama penanggung jawab pekarangan keluarga.</span>
+          <span class="field-hint">Nama penanggung jawab pekarangan rumah tangga.</span>
         </div>
 
-        <!-- Field 3: Wilayah MWC & Ranting (Teritorial NU) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <!-- Field 3: Wilayah MWC & Ranting -->
+        <div class="territory-grid">
           <div class="field-group">
             <label class="field-label">MWC (Kecamatan) <span class="required">*</span></label>
             <select v-model="form.mwcZone" class="field-input">
@@ -258,23 +253,15 @@ const submitIdentity = async () => {
             </select>
           </div>
           <div class="field-group">
-            <label class="field-label">Ranting (Desa) <span class="required">*</span></label>
+            <label class="field-label">Desa / Ranting <span class="required">*</span></label>
             <input 
               v-model="form.ranting" 
               type="text" 
               class="field-input" 
-              placeholder="Contoh: Gapura Barat"
+              placeholder="Contoh: Gapura Timur"
               required 
             />
           </div>
-        </div>
-
-        <!-- Device Info -->
-        <div class="device-bind-box">
-          <div class="bind-badge">🔒 1 AKUN 1 PERANGKAT</div>
-          <p class="bind-text">
-            Perangkat terikat: <code>{{ deviceId.substring(0, 18) }}...</code>. Sesi aktif dilindungi di Google Sheets.
-          </p>
         </div>
 
         <!-- Submit Button -->
@@ -284,12 +271,21 @@ const submitIdentity = async () => {
             class="submit-btn" 
             :disabled="!isValid || isSubmitting"
           >
-            <span v-if="isSubmitting">Menyimpan Akun... ⏳</span>
-            <span v-else-if="foundAccount">Gunakan Akun Ini 📲</span>
-            <span v-else>Mulai Pekarangan Saya 🚀</span>
+            <template v-if="isSubmitting">
+              <AppIcon name="loader" size="xs" color="#ffffff" />
+              <span>Menyimpan Identitas...</span>
+            </template>
+            <template v-else-if="foundAccount">
+              <AppIcon name="arrow-right" size="xs" color="#ffffff" />
+              <span>Masuk ke Pekarangan Saya</span>
+            </template>
+            <template v-else>
+              <AppIcon name="sprout" size="xs" color="#ffffff" />
+              <span>Mulai Menanam & Mencatat</span>
+            </template>
           </button>
           <p v-if="!isValid" class="validation-warning">
-            * Mohon isi Nomor HP dan Nama Lengkap untuk melanjutkan.
+            * Mohon lengkapi Nomor WhatsApp, Nama, dan Desa untuk melanjutkan.
           </p>
         </div>
       </form>
@@ -323,7 +319,7 @@ const submitIdentity = async () => {
 
 .onboarding-header {
   background: #ffffff;
-  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 16px 20px;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) 20px 18px 20px;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -337,14 +333,13 @@ const submitIdentity = async () => {
 .header-logo {
   width: 40px;
   height: 40px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, #16a34a, #14532d);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.15);
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
 }
 
 .header-meta {
@@ -363,11 +358,11 @@ const submitIdentity = async () => {
   font-weight: 800;
   letter-spacing: 0.05em;
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .header-title {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
@@ -384,31 +379,20 @@ const submitIdentity = async () => {
 
 .found-banner {
   margin: 16px 20px 0 20px;
-  padding: 12px;
-  border-radius: 4px;
+  padding: 12px 14px;
+  border-radius: 8px;
   background-color: #f0fdf4;
   border: 1px solid #86efac;
   display: flex;
   gap: 12px;
-  align-items: flex-start;
-}
-
-.banner-warning {
-  background-color: #fffbeb !important;
-  border-color: #fde68a !important;
-}
-
-.banner-warning .found-title {
-  color: #b45309 !important;
-}
-
-.banner-warning .found-desc {
-  color: #92400e !important;
+  align-items: center;
 }
 
 .found-icon {
-  font-size: 24px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .found-info {
@@ -455,37 +439,6 @@ const submitIdentity = async () => {
   color: #dc2626;
 }
 
-.input-with-action {
-  display: flex;
-  gap: 8px;
-}
-
-.input-with-action .field-input {
-  flex: 1;
-}
-
-.check-btn {
-  background-color: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  padding: 0 14px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-}
-
-.check-btn:hover:not(:disabled) {
-  background-color: #e2e8f0;
-}
-
-.check-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .field-input {
   width: 100%;
   box-sizing: border-box;
@@ -494,7 +447,7 @@ const submitIdentity = async () => {
   color: #0f172a;
   background-color: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  border-radius: 8px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -510,37 +463,10 @@ const submitIdentity = async () => {
   line-height: 1.35;
 }
 
-.device-bind-box {
-  background-color: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  padding: 12px;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.bind-badge {
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: #475569;
-  letter-spacing: 0.05em;
-}
-
-.bind-text {
-  font-size: 0.72rem;
-  color: #64748b;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.bind-text code {
-  background: #e2e8f0;
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-family: monospace;
-  font-size: 0.72rem;
+.territory-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .submit-section {
@@ -558,8 +484,12 @@ const submitIdentity = async () => {
   color: #ffffff;
   background: linear-gradient(135deg, #16a34a, #15803d);
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
   transition: opacity 0.15s ease, transform 0.1s ease;
 }
@@ -567,11 +497,6 @@ const submitIdentity = async () => {
 .submit-btn:hover:not(:disabled) {
   opacity: 0.95;
   transform: translateY(-1px);
-}
-
-.btn-takeover {
-  background: linear-gradient(135deg, #d97706, #b45309) !important;
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25) !important;
 }
 
 .submit-btn:disabled {

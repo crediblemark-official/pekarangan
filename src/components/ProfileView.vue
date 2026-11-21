@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { StorageService } from '../services/storage';
 import { ApiService, getEffectiveGasUrl } from '../services/api';
-import { TursoService, isTursoConfigured } from '../services/turso';
+import { isTursoConfigured } from '../services/turso';
 import { SecurityService } from '../services/security';
 import type { AppSettings } from '../types';
 import { MWC_ZONES } from '../data/zones';
@@ -41,63 +41,6 @@ const plantsCount = ref(StorageService.getPlants().length);
 const livestockCount = ref(StorageService.getLivestocks().length);
 const totalSavings = ref(StorageService.getTotalSavings());
 const queueCount = ref(StorageService.getSyncQueue().length);
-
-// Turso Cloud State
-const isTestingTurso = ref(false);
-const isInitSchema = ref(false);
-const tursoPingResult = ref<{ success: boolean; latencyMs: number; message: string } | null>(null);
-
-const testTursoConnection = async () => {
-  if (!settings.tursoUrl?.trim()) {
-    emit('showToast', 'Harap isi URL Database Turso.', 'warning');
-    return;
-  }
-  isTestingTurso.value = true;
-  tursoPingResult.value = null;
-  try {
-    const res = await TursoService.ping({
-      url: settings.tursoUrl.trim(),
-      authToken: (settings.tursoAuthToken || '').trim()
-    });
-    tursoPingResult.value = res;
-    if (res.success) {
-      StorageService.saveSettings({ ...settings });
-      emit('showToast', `Koneksi Turso Sukses! (${res.latencyMs} ms)`, 'success');
-    } else {
-      emit('showToast', res.message, 'error');
-    }
-  } catch (err: any) {
-    emit('showToast', 'Gagal tes koneksi: ' + err.message, 'error');
-  } finally {
-    isTestingTurso.value = false;
-  }
-};
-
-const initializeTursoSchema = async () => {
-  if (!settings.tursoUrl?.trim()) {
-    emit('showToast', 'Harap isi URL Database Turso.', 'warning');
-    return;
-  }
-  StorageService.saveSettings({ ...settings });
-  isInitSchema.value = true;
-  try {
-    const ok = await TursoService.initSchema();
-    if (ok) {
-      emit('showToast', 'Seluruh tabel Turso berhasil dibuat/disiapkan! 🎉', 'success');
-    } else {
-      emit('showToast', 'Gagal inisialisasi tabel di Turso.', 'error');
-    }
-  } catch (err: any) {
-    emit('showToast', 'Error inisialisasi: ' + err.message, 'error');
-  } finally {
-    isInitSchema.value = false;
-  }
-};
-
-const saveTursoSettings = () => {
-  StorageService.saveSettings({ ...settings });
-  emit('showToast', 'Pengaturan Database Turso berhasil disimpan!', 'success');
-};
 
 onMounted(() => {
   // Pastikan form selalu sinkron dengan data profil terbaru saat halaman dibuka
@@ -318,18 +261,18 @@ const clearAppCache = async () => {
       <div style="padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle);">
         <div class="flex items-center gap-1.5" style="font-size: 0.74rem; font-weight: 800; color: #0f766e; text-transform: uppercase; margin-bottom: 6px;">
           <AppIcon name="user" size="xs" />
-          <span>Data Pemilik</span>
+          <span>Identitas Keluarga & Pekarangan</span>
         </div>
         
         <div class="form-group">
-          <label class="form-label">Nama Pemilik</label>
+          <label class="form-label">Nama Kepala Keluarga / Pengelola</label>
           <input 
             v-model="settings.ownerName" 
             type="text" 
             class="form-control" 
             :disabled="isFormLocked"
             :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
-            placeholder="Belum diisi (Contoh: Budi Santoso)"
+            placeholder="Contoh: Rasyiqi atau Bpk. Rasyiqi"
           />
         </div>
 
@@ -476,108 +419,8 @@ const clearAppCache = async () => {
           style="padding: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem;" 
           @click="saveProfile"
         >
-          <span>🔒</span>
-          <span>Simpan & Kunci</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Device Identity Info Card -->
-    <div class="card" style="padding: 10px 14px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.76rem;">
-        <span style="color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
-          <span>📱</span> ID Perangkat Warga:
-        </span>
-        <code style="font-family: monospace; font-weight: 700; color: var(--primary);">{{ deviceId.substring(0, 16) }}...</code>
-      </div>
-    </div>
-
-    <!-- Cloud Database Configuration (Turso SQLite Serverless) -->
-    <div class="card">
-      <div class="card-title">
-        <span>⚡ Database Cloud (Turso SQLite)</span>
-        <span 
-          :style="{
-            fontSize: '0.65rem',
-            padding: '2px 7px',
-            borderRadius: '4px',
-            fontWeight: '800',
-            background: isTursoConfigured() ? '#dcfce7' : '#f1f5f9',
-            color: isTursoConfigured() ? '#166534' : '#475569',
-            border: isTursoConfigured() ? '1px solid #86efac' : '1px solid #cbd5e1'
-          }"
-        >
-          {{ isTursoConfigured() ? 'Aktif' : 'Belum Dikonfigurasi' }}
-        </span>
-      </div>
-
-      <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.4;">
-        SQLite serverless libSQL dengan latensi ultra rendah (&lt;50ms), gratis 5GB, tanpa batas cold-start Google Sheets.
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Database URL Turso</label>
-        <input 
-          v-model="settings.tursoUrl" 
-          type="text" 
-          class="form-control" 
-          placeholder="https://pekarangan-xxxx.turso.io"
-        />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Auth Token Turso</label>
-        <input 
-          v-model="settings.tursoAuthToken" 
-          type="password" 
-          class="form-control" 
-          placeholder="eyJhbGciOiJFZERT..."
-        />
-      </div>
-
-      <div v-if="tursoPingResult" :style="{
-        padding: '6px 10px',
-        borderRadius: '6px',
-        marginBottom: '10px',
-        fontSize: '0.72rem',
-        fontWeight: '600',
-        background: tursoPingResult.success ? '#f0fdf4' : '#fef2f2',
-        color: tursoPingResult.success ? '#15803d' : '#b91c1c',
-        border: tursoPingResult.success ? '1px solid #86efac' : '1px solid #fca5a5'
-      }">
-        {{ tursoPingResult.message }}
-      </div>
-
-      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-        <button 
-          type="button" 
-          class="btn-sync-action active:scale-95 transition-transform flex items-center gap-1" 
-          :disabled="isTestingTurso"
-          @click="testTursoConnection"
-        >
-          <span v-if="isTestingTurso" class="spinner-green"></span>
-          <AppIcon v-else name="refresh" size="xs" />
-          <span>{{ isTestingTurso ? 'Mengetes...' : 'Tes Latensi' }}</span>
-        </button>
-
-        <button 
-          type="button" 
-          class="btn-queue-action active:scale-95 transition-transform flex items-center gap-1" 
-          :disabled="isInitSchema"
-          @click="initializeTursoSchema"
-        >
-          <AppIcon name="dashboard" size="xs" />
-          <span>{{ isInitSchema ? 'Membuat...' : 'Buat Tabel' }}</span>
-        </button>
-
-        <button 
-          type="button" 
-          class="btn-sm btn-primary active:scale-95 transition-transform flex items-center gap-1" 
-          style="margin-left: auto; padding: 5px 12px; font-size: 0.75rem;"
-          @click="saveTursoSettings"
-        >
-          <AppIcon name="save" size="xs" color="#ffffff" />
-          <span>Simpan</span>
+          <AppIcon name="check" size="xs" color="#ffffff" />
+          <span>Simpan Perubahan</span>
         </button>
       </div>
     </div>
