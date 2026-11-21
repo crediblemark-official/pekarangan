@@ -6,6 +6,7 @@ import { TursoService, isTursoConfigured } from '../services/turso';
 import { SecurityService } from '../services/security';
 import type { AppSettings } from '../types';
 import { MWC_ZONES } from '../data/zones';
+import AppIcon from './AppIcon.vue';
 
 const emit = defineEmits<{
   (e: 'showToast', message: string, type?: 'success' | 'error' | 'warning'): void;
@@ -61,7 +62,7 @@ const testTursoConnection = async () => {
     tursoPingResult.value = res;
     if (res.success) {
       StorageService.saveSettings({ ...settings });
-      emit('showToast', `Koneksi Turso Sukses! (${res.latencyMs} ms) 🚀`, 'success');
+      emit('showToast', `Koneksi Turso Sukses! (${res.latencyMs} ms)`, 'success');
     } else {
       emit('showToast', res.message, 'error');
     }
@@ -162,7 +163,7 @@ const saveProfile = () => {
   }
 
   isFormLocked.value = true; // Kunci otomatis setelah disimpan!
-  emit('showToast', 'Identitas pekarangan berhasil disimpan! 🏡', 'success');
+  emit('showToast', 'Identitas pekarangan berhasil disimpan!', 'success');
 };
 
 const isSyncingData = ref(false);
@@ -249,8 +250,8 @@ const clearAppCache = async () => {
     <!-- User Profile Card (Device Bound Identity) - Full Edge Flat -->
     <div class="card" style="background: linear-gradient(135deg, #064e3b, #15803d); color: #fff; padding: 12px 14px; margin-bottom: 0; border-radius: 0; box-shadow: none; border-bottom: 1px solid #166534;">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1.5px solid rgba(255,255,255,0.4); flex-shrink: 0;">
-          🏡
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(255,255,255,0.4); flex-shrink: 0;">
+          <AppIcon name="home" size="md" class="text-white" />
         </div>
         <div style="flex: 1; min-width: 0;">
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -265,7 +266,7 @@ const clearAppCache = async () => {
             {{ settings.yardName || '— Nama Pekarangan —' }}
           </div>
           <div style="font-size: 0.72rem; opacity: 0.85; margin-top: 1px;">
-            📍 RT {{ settings.defaultRtRw || '—' }} • {{ settings.addressDetail || '—' }}
+            RT {{ settings.defaultRtRw || '—' }} • {{ settings.addressDetail || '—' }}
           </div>
         </div>
       </div>
@@ -273,19 +274,19 @@ const clearAppCache = async () => {
       <!-- Quick Metrics Ribbon -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.15); text-align: center;">
         <div>
-          <div style="font-size: 0.95rem; font-weight: 800;">{{ membersCount }}</div>
+          <div class="font-mono" style="font-size: 0.95rem; font-weight: 800;">{{ membersCount }}</div>
           <div style="font-size: 0.6rem; opacity: 0.85;">Pekarangan</div>
         </div>
         <div>
-          <div style="font-size: 0.95rem; font-weight: 800;">{{ plantsCount }}</div>
+          <div class="font-mono" style="font-size: 0.95rem; font-weight: 800;">{{ plantsCount }}</div>
           <div style="font-size: 0.6rem; opacity: 0.85;">Tanaman</div>
         </div>
         <div>
-          <div style="font-size: 0.95rem; font-weight: 800;">{{ livestockCount }}</div>
+          <div class="font-mono" style="font-size: 0.95rem; font-weight: 800;">{{ livestockCount }}</div>
           <div style="font-size: 0.6rem; opacity: 0.85;">Kandang</div>
         </div>
         <div>
-          <div style="font-size: 0.95rem; font-weight: 800;">Rp {{ Math.round(totalSavings / 1000) }}k</div>
+          <div class="font-mono" style="font-size: 0.95rem; font-weight: 800;">Rp {{ Math.round(totalSavings / 1000) }}k</div>
           <div style="font-size: 0.6rem; opacity: 0.85;">Hemat</div>
         </div>
       </div>
@@ -294,7 +295,10 @@ const clearAppCache = async () => {
     <!-- Edit Profile Form (Data Pemilik & Lahan - DILENGKAPI FITUR KUNCI FORM) -->
     <div class="card">
       <div class="card-title">
-        <span>✏️ Identitas Pemilik & Lahan</span>
+        <span class="flex items-center gap-1.5">
+          <AppIcon name="edit" size="xs" />
+          <span>Identitas Pemilik & Lahan</span>
+        </span>
         <span 
           :style="{
             fontSize: '0.65rem',
@@ -312,8 +316,9 @@ const clearAppCache = async () => {
 
       <!-- Section 1: Pemilik (Divided by line, no round box) -->
       <div style="padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle);">
-        <div style="font-size: 0.74rem; font-weight: 800; color: #0f766e; text-transform: uppercase; margin-bottom: 6px;">
-          👤 Data Pemilik
+        <div class="flex items-center gap-1.5" style="font-size: 0.74rem; font-weight: 800; color: #0f766e; text-transform: uppercase; margin-bottom: 6px;">
+          <AppIcon name="user" size="xs" />
+          <span>Data Pemilik</span>
         </div>
         
         <div class="form-group">
@@ -395,8 +400,9 @@ const clearAppCache = async () => {
 
       <!-- Section 2: Objek Pekarangan (Divided by line, no round box) -->
       <div style="padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border-subtle);">
-        <div style="font-size: 0.74rem; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; margin-bottom: 6px;">
-          🏡 Data Pekarangan
+        <div class="flex items-center gap-1.5" style="font-size: 0.74rem; font-weight: 800; color: var(--primary-dark); text-transform: uppercase; margin-bottom: 6px;">
+          <AppIcon name="home" size="xs" />
+          <span>Data Pekarangan</span>
         </div>
 
         <div class="form-group">
@@ -545,30 +551,33 @@ const clearAppCache = async () => {
       <div style="display: flex; gap: 6px; flex-wrap: wrap;">
         <button 
           type="button" 
-          class="btn-sync-action" 
+          class="btn-sync-action active:scale-95 transition-transform flex items-center gap-1" 
           :disabled="isTestingTurso"
           @click="testTursoConnection"
         >
           <span v-if="isTestingTurso" class="spinner-green"></span>
-          <span>{{ isTestingTurso ? 'Mengetes...' : '⚡ Tes Latensi' }}</span>
+          <AppIcon v-else name="refresh" size="xs" />
+          <span>{{ isTestingTurso ? 'Mengetes...' : 'Tes Latensi' }}</span>
         </button>
 
         <button 
           type="button" 
-          class="btn-queue-action" 
+          class="btn-queue-action active:scale-95 transition-transform flex items-center gap-1" 
           :disabled="isInitSchema"
           @click="initializeTursoSchema"
         >
-          <span>{{ isInitSchema ? 'Membuat...' : '🛠️ Buat Tabel' }}</span>
+          <AppIcon name="dashboard" size="xs" />
+          <span>{{ isInitSchema ? 'Membuat...' : 'Buat Tabel' }}</span>
         </button>
 
         <button 
           type="button" 
-          class="btn-sm btn-primary" 
+          class="btn-sm btn-primary active:scale-95 transition-transform flex items-center gap-1" 
           style="margin-left: auto; padding: 5px 12px; font-size: 0.75rem;"
           @click="saveTursoSettings"
         >
-          💾 Simpan
+          <AppIcon name="save" size="xs" class="text-white" />
+          <span>Simpan</span>
         </button>
       </div>
     </div>

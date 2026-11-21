@@ -514,7 +514,7 @@ export const StorageService = {
         category: 'panen',
         title: 'Alhamdulillah Panen Cabai Rawit & Bayam Hijau',
         content: 'Pagi ini petik cabai rawit merah dan seikat bayam segar dari polybag pekarangan samping. Alhamdulillah uang belanja dapur hari ini hemat Rp 15.000!',
-        metricBadge: '🌾 Panen 1.2 kg',
+        metricBadge: 'Panen 1.2 kg',
         reactions: { berkah: 6, masyaallah: 4, seger: 5, semangat: 2 },
         userReaction: null,
         createdAt: new Date(Date.now() - 3600000 * 3).toISOString()
@@ -529,7 +529,7 @@ export const StorageService = {
         category: 'ternak',
         title: 'Pungut 14 Butir Telur Ayam Segar',
         content: 'Alhamdulillah produksi telur ayam kandang produktif hari ini melimpah. Sebagian untuk sarapan anak-anak, sisanya disedekahkan ke tetangga musholla.',
-        metricBadge: '🥚 14 Butir Telur',
+        metricBadge: '14 Butir Telur',
         reactions: { berkah: 8, masyaallah: 7, seger: 3, semangat: 4 },
         userReaction: null,
         createdAt: new Date(Date.now() - 3600000 * 12).toISOString()

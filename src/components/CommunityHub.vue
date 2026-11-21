@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import { StorageService } from '../services/storage';
 import { TursoService, isTursoConfigured } from '../services/turso';
+import AppIcon from './AppIcon.vue';
 
 const emit = defineEmits<{
   (e: 'showToast', message: string, type?: 'success' | 'error' | 'warning'): void;
@@ -21,6 +22,12 @@ const settings = StorageService.getSettings();
 // 3 Sub-Tabs
 const activeSubTab = ref<'kabar' | 'liga' | 'warga'>('kabar');
 
+// Helper to strip any legacy bare emojis from stored badges / metrics
+const cleanEmoji = (text?: string): string => {
+  if (!text) return '';
+  return text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+};
+
 // ============================================================================
 // 1. SUB-TAB: APA KABAR PEKARANGANMU? (FEED SOSIAL)
 // ============================================================================
@@ -29,14 +36,14 @@ const loadingPosts = ref(false);
 const selectedCategory = ref<string>('all');
 
 const CATEGORIES = [
-  { id: 'all', label: 'Semua', icon: '🌟' },
-  { id: 'panen', label: 'Panen', icon: '🌾' },
-  { id: 'tanam', label: 'Tanam', icon: '🌱' },
-  { id: 'ternak', label: 'Ternak', icon: '🥚' },
-  { id: 'dapur', label: 'Dapur Hemat', icon: '🍳' },
-  { id: 'apotek', label: 'Apotek Hidup', icon: '💊' },
-  { id: 'sedekah', label: 'Sedekah', icon: '🤝' },
-  { id: 'rpp', label: 'Olahan RPP', icon: '🧺' }
+  { id: 'all', label: 'Semua', icon: 'star' },
+  { id: 'panen', label: 'Panen', icon: 'wheat' },
+  { id: 'tanam', label: 'Tanam', icon: 'sprout' },
+  { id: 'ternak', label: 'Ternak', icon: 'egg' },
+  { id: 'dapur', label: 'Dapur', icon: 'utensils' },
+  { id: 'apotek', label: 'Apotek', icon: 'pill' },
+  { id: 'sedekah', label: 'Sedekah', icon: 'heart-handshake' },
+  { id: 'rpp', label: 'RPP', icon: 'package' }
 ];
 
 const filteredPosts = computed(() => {
@@ -198,8 +205,9 @@ onMounted(() => {
           :class="{ active: activeSubTab === 'kabar' }"
           @click="activeSubTab = 'kabar'"
         >
-          <span>📢 Apa Kabar?</span>
-          <span class="seg-badge" v-if="posts.length > 0">{{ posts.length }}</span>
+          <AppIcon name="radio" size="xs" />
+          <span>Kabar</span>
+          <span class="seg-badge font-mono" v-if="posts.length > 0">{{ posts.length }}</span>
         </button>
 
         <button 
@@ -208,7 +216,8 @@ onMounted(() => {
           :class="{ active: activeSubTab === 'liga' }"
           @click="activeSubTab = 'liga'"
         >
-          <span>🏆 Liga Berkah</span>
+          <AppIcon name="trophy" size="xs" />
+          <span>Liga</span>
         </button>
 
         <button 
@@ -217,8 +226,9 @@ onMounted(() => {
           :class="{ active: activeSubTab === 'warga' }"
           @click="activeSubTab = 'warga'"
         >
-          <span>👥 Warga</span>
-          <span class="seg-badge">{{ members.length }}</span>
+          <AppIcon name="users" size="xs" />
+          <span>Warga</span>
+          <span class="seg-badge font-mono">{{ members.length }}</span>
         </button>
       </div>
     </div>
@@ -233,17 +243,17 @@ onMounted(() => {
           v-for="cat in CATEGORIES" 
           :key="cat.id"
           type="button" 
-          class="cat-chip" 
+          class="cat-chip active:scale-95 transition-transform" 
           :class="{ active: selectedCategory === cat.id }"
           @click="selectedCategory = cat.id"
         >
-          <span>{{ cat.icon }}</span>
+          <AppIcon :name="cat.icon" size="xs" />
           <span>{{ cat.label }}</span>
         </button>
       </div>
 
       <!-- Loading State -->
-      <div v-if="loadingPosts" style="text-align: center; padding: 24px 0; color: var(--text-dim); font-size: 0.85rem;">
+      <div v-if="loadingPosts" class="py-6 text-center text-xs text-neutral-500 font-medium">
         Memperbarui kabar pekarangan dari warga...
       </div>
 
@@ -256,7 +266,7 @@ onMounted(() => {
         >
           <!-- Post Header -->
           <div class="feed-header">
-            <div class="feed-avatar">
+            <div class="feed-avatar font-mono">
               {{ post.authorName.charAt(0).toUpperCase() }}
             </div>
             <div class="feed-author-meta">
@@ -265,14 +275,18 @@ onMounted(() => {
                 <span v-if="post.authorPhone === settings.phone" class="self-tag">Saya</span>
               </div>
               <div class="feed-yard-sub">
-                <span v-if="post.yardName">🏡 {{ post.yardName }} • </span>
+                <span v-if="post.yardName" class="inline-flex items-center gap-0.5">
+                  <AppIcon name="home" size="xs" class="text-emerald-600 inline" />
+                  <span>{{ post.yardName }}</span>
+                  <span class="dot-sep">•</span>
+                </span>
                 <span>{{ post.ranting }}</span>
                 <span class="dot-sep">•</span>
-                <span class="feed-time">{{ formatRelativeTime(post.createdAt) }}</span>
+                <span class="feed-time font-mono">{{ formatRelativeTime(post.createdAt) }}</span>
               </div>
             </div>
-            <div v-if="post.metricBadge" class="feed-metric-pill">
-              {{ post.metricBadge }}
+            <div v-if="post.metricBadge" class="feed-metric-pill font-mono">
+              {{ cleanEmoji(post.metricBadge) }}
             </div>
           </div>
 
@@ -288,7 +302,8 @@ onMounted(() => {
 
             <!-- Badge Integrasi Mamasar -->
             <div v-if="post.isMamasarProduct" class="mamasar-feed-tag">
-              <span>🧺 Produk Olahan RPP • Tersedia di Mamasar</span>
+              <AppIcon name="package" size="xs" class="text-blue-700" />
+              <span>Produk Olahan RPP • Mamasar</span>
             </div>
           </div>
 
@@ -297,70 +312,76 @@ onMounted(() => {
             <div class="reaction-buttons-group">
               <button 
                 type="button" 
-                class="react-btn" 
+                class="react-btn active:scale-95 transition-transform" 
                 :class="{ active: post.userReaction === 'berkah' }"
                 @click="handleReaction(post, 'berkah')"
               >
-                <span>🤲</span>
+                <AppIcon name="sparkles" size="xs" />
                 <span class="react-label">Berkah</span>
-                <span class="react-count">{{ post.reactions?.berkah || 0 }}</span>
+                <span class="react-count font-mono">{{ post.reactions?.berkah || 0 }}</span>
               </button>
 
               <button 
                 type="button" 
-                class="react-btn" 
+                class="react-btn active:scale-95 transition-transform" 
                 :class="{ active: post.userReaction === 'masyaallah' }"
                 @click="handleReaction(post, 'masyaallah')"
               >
-                <span>💚</span>
+                <AppIcon name="heart" size="xs" />
                 <span class="react-label">MasyaAllah</span>
-                <span class="react-count">{{ post.reactions?.masyaallah || 0 }}</span>
+                <span class="react-count font-mono">{{ post.reactions?.masyaallah || 0 }}</span>
               </button>
 
               <button 
                 type="button" 
-                class="react-btn" 
+                class="react-btn active:scale-95 transition-transform" 
                 :class="{ active: post.userReaction === 'seger' }"
                 @click="handleReaction(post, 'seger')"
               >
-                <span>🥬</span>
+                <AppIcon name="leaf" size="xs" />
                 <span class="react-label">Seger</span>
-                <span class="react-count">{{ post.reactions?.seger || 0 }}</span>
+                <span class="react-count font-mono">{{ post.reactions?.seger || 0 }}</span>
               </button>
 
               <button 
                 type="button" 
-                class="react-btn" 
+                class="react-btn active:scale-95 transition-transform" 
                 :class="{ active: post.userReaction === 'semangat' }"
                 @click="handleReaction(post, 'semangat')"
               >
-                <span>🔥</span>
+                <AppIcon name="flame" size="xs" />
                 <span class="react-label">Giat</span>
-                <span class="react-count">{{ post.reactions?.semangat || 0 }}</span>
+                <span class="react-count font-mono">{{ post.reactions?.semangat || 0 }}</span>
               </button>
             </div>
 
             <button 
               v-if="post.authorPhone && post.authorPhone !== settings.phone"
               type="button" 
-              class="sapa-wa-btn"
+              class="sapa-wa-btn active:scale-95 transition-transform"
               @click="openWhatsApp(post.authorPhone, post.authorName)"
               title="Kirim sapaan WhatsApp"
             >
-              💬 Sapa
+              <AppIcon name="chat" size="xs" />
+              <span>Sapa</span>
             </button>
           </div>
         </div>
 
         <!-- Empty Feed -->
         <div v-if="filteredPosts.length === 0 && !loadingPosts" class="empty-state card">
-          <div style="font-size: 2.2rem; margin-bottom: 6px;">🌱</div>
-          <div style="font-weight: 700; font-size: 0.9rem;">Belum ada kabar di kategori ini</div>
-          <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">
+          <AppIcon name="sprout" size="xl" class="text-neutral-400 mb-2" />
+          <div class="font-bold text-sm text-neutral-800 dark:text-neutral-200">Belum ada kabar di kategori ini</div>
+          <div class="text-xs text-neutral-500 mt-1">
             Jadilah yang pertama mengabarkan perkembangan pekarangan Anda!
           </div>
-          <button type="button" class="btn btn-primary" style="margin-top: 12px; font-size: 0.82rem;" @click="emit('openCreatePost')">
-            📸 Buat Kabar Baru
+          <button 
+            type="button" 
+            class="flex items-center gap-1.5 mx-auto mt-3 bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-lg active:scale-95 transition-transform shadow-xs" 
+            @click="emit('openCreatePost')"
+          >
+            <AppIcon name="camera" size="xs" />
+            <span>Kabarkan</span>
           </button>
         </div>
       </div>
@@ -371,31 +392,34 @@ onMounted(() => {
     <!-- ===================================================================== -->
     <div v-else-if="activeSubTab === 'liga'" class="subtab-content">
       <!-- Tier Selector: Keluarga, Ranting, MWC -->
-      <div class="league-tier-tabs card" style="padding: 6px; margin-bottom: 12px;">
+      <div class="league-tier-tabs card p-1 mb-3">
         <div class="tier-buttons">
           <button 
             type="button" 
-            class="tier-btn" 
+            class="tier-btn active:scale-98 transition-transform" 
             :class="{ active: leagueTier === 'keluarga' }"
             @click="leagueTier = 'keluarga'"
           >
-            👨‍👩‍👧 Antar Keluarga
+            <AppIcon name="users" size="xs" />
+            <span>Keluarga</span>
           </button>
           <button 
             type="button" 
-            class="tier-btn" 
+            class="tier-btn active:scale-98 transition-transform" 
             :class="{ active: leagueTier === 'ranting' }"
             @click="leagueTier = 'ranting'"
           >
-            🕌 Antar Ranting
+            <AppIcon name="building" size="xs" />
+            <span>Ranting</span>
           </button>
           <button 
             type="button" 
-            class="tier-btn" 
+            class="tier-btn active:scale-98 transition-transform" 
             :class="{ active: leagueTier === 'mwc' }"
             @click="leagueTier = 'mwc'"
           >
-            🏛️ Antar MWC
+            <AppIcon name="landmark" size="xs" />
+            <span>MWC</span>
           </button>
         </div>
       </div>
@@ -403,16 +427,22 @@ onMounted(() => {
       <!-- Banner Status Pekarangan Saya -->
       <div v-if="leagueTier === 'keluarga' && myFamilyRank" class="my-rank-banner card">
         <div class="my-rank-header">
-          <div class="my-rank-badge">🏆 Peringkat #{{ myFamilyRank.rank }}</div>
-          <div class="my-rank-points">{{ myFamilyRank.totalPoints }} Poin Berkah</div>
+          <div class="my-rank-badge flex items-center gap-1.5">
+            <AppIcon name="trophy" size="sm" class="text-emerald-700" />
+            <span>Peringkat</span>
+            <span class="font-mono">#{{ myFamilyRank.rank }}</span>
+          </div>
+          <div class="my-rank-points font-mono">
+            {{ myFamilyRank.totalPoints }} Pts
+          </div>
         </div>
         <div class="my-rank-desc">
-          Pekarangan <strong>{{ myFamilyRank.familyName }}</strong> aktif di <strong>{{ myFamilyRank.ranting }}</strong> dengan {{ myFamilyRank.pilarCount }} Pilar Produktif.
+          Pekarangan <strong>{{ myFamilyRank.familyName }}</strong> • <strong>{{ myFamilyRank.ranting }}</strong> ({{ myFamilyRank.pilarCount }} Pilar Aktif)
         </div>
       </div>
 
       <!-- Loading State -->
-      <div v-if="loadingLeaderboard" style="text-align: center; padding: 24px 0; color: var(--text-dim); font-size: 0.85rem;">
+      <div v-if="loadingLeaderboard" class="py-6 text-center text-xs text-neutral-500 font-medium">
         Menghitung poin Fastabiqul Khairat dari Turso...
       </div>
 
@@ -420,54 +450,57 @@ onMounted(() => {
       <div v-if="leagueTier === 'keluarga' && !loadingLeaderboard" class="leaderboard-list">
         <!-- Top 3 Podium Cards -->
         <div class="podium-section" v-if="familyLeaderboard.length >= 3">
-          <!-- Juara 2 -->
+          <!-- Juara 2 (Silver) -->
           <div class="podium-card silver">
-            <div class="podium-crown">🥈</div>
+            <AppIcon name="medal" size="md" class="text-slate-400 mx-auto mb-1" />
             <div class="podium-name">{{ familyLeaderboard[1].familyName }}</div>
-            <div class="podium-pts">{{ familyLeaderboard[1].totalPoints }} Pts</div>
+            <div class="podium-pts font-mono">{{ familyLeaderboard[1].totalPoints }} Pts</div>
             <div class="podium-badge">{{ familyLeaderboard[1].ranting }}</div>
           </div>
-          <!-- Juara 1 -->
+          <!-- Juara 1 (Gold) -->
           <div class="podium-card gold">
-            <div class="podium-crown">👑</div>
+            <AppIcon name="crown" size="lg" class="text-amber-500 mx-auto mb-1" />
             <div class="podium-name">{{ familyLeaderboard[0].familyName }}</div>
-            <div class="podium-pts">{{ familyLeaderboard[0].totalPoints }} Pts</div>
-            <div class="podium-badge">Juara 1 🥇</div>
+            <div class="podium-pts font-mono">{{ familyLeaderboard[0].totalPoints }} Pts</div>
+            <div class="podium-badge-gold">Juara 1</div>
           </div>
-          <!-- Juara 3 -->
+          <!-- Juara 3 (Bronze) -->
           <div class="podium-card bronze">
-            <div class="podium-crown">🥉</div>
+            <AppIcon name="medal" size="md" class="text-amber-700 mx-auto mb-1" />
             <div class="podium-name">{{ familyLeaderboard[2].familyName }}</div>
-            <div class="podium-pts">{{ familyLeaderboard[2].totalPoints }} Pts</div>
+            <div class="podium-pts font-mono">{{ familyLeaderboard[2].totalPoints }} Pts</div>
             <div class="podium-badge">{{ familyLeaderboard[2].ranting }}</div>
           </div>
         </div>
 
         <!-- Full List Table -->
-        <div class="rank-items card" style="padding: 0;">
+        <div class="rank-items card p-0">
           <div 
             v-for="item in familyLeaderboard" 
             :key="item.memberId" 
             class="rank-row"
             :class="{ 'is-me-row': item.isCurrentUser }"
           >
-            <div class="rank-number" :class="'rank-' + item.rank">
-              {{ item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : '#' + item.rank }}
+            <div class="rank-col">
+              <span v-if="item.rank === 1" class="rank-badge gold"><AppIcon name="crown" size="xs" /></span>
+              <span v-else-if="item.rank === 2" class="rank-badge silver"><AppIcon name="medal" size="xs" /></span>
+              <span v-else-if="item.rank === 3" class="rank-badge bronze"><AppIcon name="medal" size="xs" /></span>
+              <span v-else class="rank-num font-mono">#{{ item.rank }}</span>
             </div>
             <div class="rank-info">
               <div class="rank-name-row">
                 <span class="rank-name">{{ item.familyName }}</span>
-                <span class="rank-honour-pill">{{ item.badge }}</span>
+                <span class="rank-honour-pill">{{ cleanEmoji(item.badge) }}</span>
               </div>
               <div class="rank-sub">
                 <span>{{ item.ranting }}</span>
                 <span>•</span>
-                <span>{{ item.pilarCount }} Pilar Aktif</span>
-                <span v-if="item.totalSavings > 0">• Hemat Rp {{ item.totalSavings.toLocaleString() }}</span>
+                <span>{{ item.pilarCount }} Pilar</span>
+                <span v-if="item.totalSavings > 0">• Hemat Rp <span class="font-mono">{{ item.totalSavings.toLocaleString() }}</span></span>
               </div>
             </div>
             <div class="rank-points-col">
-              <span class="pts-val">{{ item.totalPoints }}</span>
+              <span class="pts-val font-mono">{{ item.totalPoints }}</span>
               <span class="pts-lbl">Poin</span>
             </div>
           </div>
@@ -476,28 +509,31 @@ onMounted(() => {
 
       <!-- 2. TIER RANTING -->
       <div v-else-if="leagueTier === 'ranting' && !loadingLeaderboard" class="leaderboard-list">
-        <div class="rank-items card" style="padding: 0;">
+        <div class="rank-items card p-0">
           <div 
             v-for="item in rantingLeaderboard" 
             :key="item.ranting" 
             class="rank-row"
           >
-            <div class="rank-number" :class="'rank-' + item.rank">
-              {{ item.rank === 1 ? '🏆' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : '#' + item.rank }}
+            <div class="rank-col">
+              <span v-if="item.rank === 1" class="rank-badge gold"><AppIcon name="trophy" size="xs" /></span>
+              <span v-else-if="item.rank === 2" class="rank-badge silver"><AppIcon name="medal" size="xs" /></span>
+              <span v-else-if="item.rank === 3" class="rank-badge bronze"><AppIcon name="medal" size="xs" /></span>
+              <span v-else class="rank-num font-mono">#{{ item.rank }}</span>
             </div>
             <div class="rank-info">
               <div class="rank-name-row">
                 <span class="rank-name">PRNU {{ item.ranting }}</span>
-                <span class="rank-honour-pill">{{ item.badge }}</span>
+                <span class="rank-honour-pill">{{ cleanEmoji(item.badge) }}</span>
               </div>
               <div class="rank-sub">
                 <span>{{ item.mwcZone }}</span>
                 <span>•</span>
-                <span>{{ item.activeFamiliesCount }} KK Berpekarangan</span>
+                <span><strong class="font-mono">{{ item.activeFamiliesCount }}</strong> KK Berpekarangan</span>
               </div>
             </div>
             <div class="rank-points-col">
-              <span class="pts-val">{{ item.totalPoints }}</span>
+              <span class="pts-val font-mono">{{ item.totalPoints }}</span>
               <span class="pts-lbl">Poin</span>
             </div>
           </div>
@@ -506,28 +542,30 @@ onMounted(() => {
 
       <!-- 3. TIER MWC -->
       <div v-else-if="leagueTier === 'mwc' && !loadingLeaderboard" class="leaderboard-list">
-        <div class="rank-items card" style="padding: 0;">
+        <div class="rank-items card p-0">
           <div 
             v-for="item in mwcLeaderboard" 
             :key="item.mwcZone" 
             class="rank-row"
           >
-            <div class="rank-number" :class="'rank-' + item.rank">
-              {{ item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : '#' + item.rank }}
+            <div class="rank-col">
+              <span v-if="item.rank === 1" class="rank-badge gold"><AppIcon name="trophy" size="xs" /></span>
+              <span v-else-if="item.rank === 2" class="rank-badge silver"><AppIcon name="medal" size="xs" /></span>
+              <span v-else class="rank-num font-mono">#{{ item.rank }}</span>
             </div>
             <div class="rank-info">
               <div class="rank-name-row">
                 <span class="rank-name">{{ item.mwcZone }}</span>
-                <span class="rank-honour-pill">{{ item.badge }}</span>
+                <span class="rank-honour-pill">{{ cleanEmoji(item.badge) }}</span>
               </div>
               <div class="rank-sub">
-                <span>{{ item.totalRanting }} Ranting Terdaftar</span>
+                <span>{{ item.totalRanting }} Ranting</span>
                 <span>•</span>
-                <span>{{ item.activeFamiliesCount }} KK Aktif</span>
+                <span><strong class="font-mono">{{ item.activeFamiliesCount }}</strong> KK Aktif</span>
               </div>
             </div>
             <div class="rank-points-col">
-              <span class="pts-val">{{ item.totalPoints }}</span>
+              <span class="pts-val font-mono">{{ item.totalPoints }}</span>
               <span class="pts-lbl">Poin</span>
             </div>
           </div>
@@ -536,22 +574,25 @@ onMounted(() => {
 
       <!-- Panduan Poin Edukatif -->
       <div class="scoring-info-box card">
-        <div class="scoring-title">🌱 Rumus Poin Fastabiqul Khairat</div>
+        <div class="scoring-title flex items-center gap-1.5">
+          <AppIcon name="sparkles" size="xs" class="text-emerald-600" />
+          <span>Aturan Poin Fastabiqul Khairat</span>
+        </div>
         <div class="scoring-grid">
           <div class="scoring-item">
-            <span class="sc-pts">+50</span>
-            <span class="sc-desc">Tiap Pilar Terdata (Maks 200 Pts)</span>
+            <span class="sc-pts font-mono">+50</span>
+            <span class="sc-desc">Tiap Pilar Terdata (Maks 200)</span>
           </div>
           <div class="scoring-item">
-            <span class="sc-pts">+20</span>
+            <span class="sc-pts font-mono">+20</span>
             <span class="sc-desc">Tiap Catatan Panen Riil</span>
           </div>
           <div class="scoring-item">
-            <span class="sc-pts">+15</span>
+            <span class="sc-pts font-mono">+15</span>
             <span class="sc-desc">Tiap Catatan Produksi Telur</span>
           </div>
           <div class="scoring-item">
-            <span class="sc-pts">+15</span>
+            <span class="sc-pts font-mono">+15</span>
             <span class="sc-desc">Posting Kabar Pekarangan</span>
           </div>
         </div>
@@ -563,9 +604,9 @@ onMounted(() => {
     <!-- ===================================================================== -->
     <div v-else-if="activeSubTab === 'warga'" class="subtab-content">
       <!-- Search & Filter Bar -->
-      <div class="card" style="padding: 8px 14px; margin-bottom: 0;">
-        <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
-          <div style="position: relative; flex: 1;">
+      <div class="card p-2 mb-2">
+        <div class="flex gap-2 mb-2 items-center">
+          <div class="relative flex-1">
             <input 
               v-model="searchQuery" 
               type="text" 
@@ -573,16 +614,18 @@ onMounted(() => {
               style="padding-left: 32px; font-size: 0.82rem; padding-top: 6px; padding-bottom: 6px;"
               placeholder="Cari nama, RT, tanaman..."
             />
-            <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; opacity: 0.6;">🔍</span>
+            <div class="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400">
+              <AppIcon name="search" size="xs" />
+            </div>
           </div>
-          <span class="member-count-pill">{{ filteredMembers.length }} KK</span>
+          <span class="member-count-pill font-mono">{{ filteredMembers.length }} KK</span>
         </div>
 
         <!-- Filter RT Chips -->
         <div class="rt-filter-chips">
           <button 
             type="button" 
-            class="chip-btn" 
+            class="chip-btn active:scale-95 transition-transform" 
             :class="{ active: selectedRt === 'all' }"
             @click="selectedRt = 'all'"
           >
@@ -592,7 +635,7 @@ onMounted(() => {
             v-for="rt in rtList" 
             :key="rt"
             type="button" 
-            class="chip-btn" 
+            class="chip-btn active:scale-95 transition-transform" 
             :class="{ active: selectedRt === rt }"
             @click="selectedRt = rt"
           >
@@ -610,19 +653,20 @@ onMounted(() => {
           :class="{ 'is-owner-card': isOwner(m) }"
         >
           <div class="member-card-header">
-            <div class="member-avatar" :style="isOwner(m) ? { background: '#16a34a', color: '#fff' } : {}">
-              {{ isOwner(m) ? '⭐' : m.name.charAt(0).toUpperCase() }}
+            <div class="member-avatar font-mono" :style="isOwner(m) ? { background: '#16a34a', color: '#fff' } : {}">
+              {{ isOwner(m) ? '★' : m.name.charAt(0).toUpperCase() }}
             </div>
             <div class="member-main-info">
-              <div class="member-name-row" style="flex-wrap: wrap; gap: 4px;">
+              <div class="member-name-row flex-wrap gap-1">
                 <span class="member-name">{{ m.name }}</span>
-                <span v-if="isOwner(m)" style="font-size: 0.6rem; background: #16a34a; color: #fff; font-weight: 800; padding: 1px 6px; border-radius: 3px;">
-                  Saya
+                <span v-if="isOwner(m)" class="self-tag">Saya</span>
+                <span v-else class="verified-icon" title="Pekarangan Aktif">
+                  <AppIcon name="check" size="xs" class="text-white" stroke-width="2.5" />
                 </span>
-                <span v-else class="verified-icon" title="Pekarangan Aktif">✓</span>
               </div>
-              <div v-if="m.yardName" style="font-size: 0.78rem; font-weight: 700; color: #166534;">
-                🏡 {{ m.yardName }}
+              <div v-if="m.yardName" class="text-xs font-semibold text-emerald-800 flex items-center gap-1">
+                <AppIcon name="home" size="xs" class="text-emerald-600 inline" />
+                <span>{{ m.yardName }}</span>
               </div>
               <div class="member-meta">
                 <span v-if="m.ranting">{{ m.ranting }} • </span>
@@ -638,7 +682,7 @@ onMounted(() => {
           <div class="member-card-actions">
             <button 
               type="button" 
-              class="btn-sm btn-outline btn-full"
+              class="btn-sm btn-outline btn-full active:scale-95 transition-transform"
               style="padding: 5px 8px; font-size: 0.76rem;"
               @click="selectedMember = m"
             >
@@ -648,7 +692,7 @@ onMounted(() => {
             <button 
               v-if="isOwner(m)"
               type="button" 
-              class="btn-sm btn-primary btn-full"
+              class="btn-sm btn-primary btn-full active:scale-95 transition-transform"
               style="padding: 5px 8px; font-size: 0.76rem;"
               @click="$emit('goToProfile')"
             >
@@ -658,19 +702,20 @@ onMounted(() => {
             <button 
               v-else
               type="button" 
-              class="btn-sm btn-whatsapp btn-full"
+              class="btn-sm btn-whatsapp btn-full active:scale-95 transition-transform flex items-center justify-center gap-1.5"
               style="padding: 5px 8px; font-size: 0.76rem;"
               @click="openWhatsApp(m.phone, m.name)"
             >
+              <AppIcon name="chat" size="xs" />
               <span>WhatsApp</span>
             </button>
           </div>
         </div>
 
         <div v-if="filteredMembers.length === 0" class="empty-state card">
-          <div style="font-size: 2.2rem; margin-bottom: 6px;">🔍</div>
-          <div style="font-weight: 700; font-size: 0.9rem;">Tidak ada anggota yang cocok</div>
-          <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">Coba gunakan kata kunci pencarian yang lain</div>
+          <AppIcon name="search" size="xl" class="text-neutral-400 mb-2" />
+          <div class="font-bold text-sm text-neutral-800 dark:text-neutral-200">Tidak ada anggota yang cocok</div>
+          <div class="text-xs text-neutral-500 mt-1">Coba gunakan kata kunci pencarian yang lain</div>
         </div>
       </div>
     </div>
@@ -682,76 +727,78 @@ onMounted(() => {
       <div class="modal-card" @click.stop>
         <div class="modal-header">
           <div>
-            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-              <span style="font-weight: 800; font-size: 1.05rem;">{{ selectedMember.name }}</span>
-              <span v-if="isOwner(selectedMember)" style="font-size: 0.6rem; background: #16a34a; color: #fff; font-weight: 800; padding: 1px 6px; border-radius: 3px;">
-                Saya
-              </span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-base text-neutral-900">{{ selectedMember.name }}</span>
+              <span v-if="isOwner(selectedMember)" class="self-tag">Saya</span>
             </div>
-            <div v-if="selectedMember.yardName" style="font-size: 0.82rem; font-weight: 700; color: #166534; margin-top: 1px;">
-              🏡 {{ selectedMember.yardName }}
+            <div v-if="selectedMember.yardName" class="text-xs font-semibold text-emerald-800 mt-0.5 flex items-center gap-1">
+              <AppIcon name="home" size="xs" class="text-emerald-600 inline" />
+              <span>{{ selectedMember.yardName }}</span>
             </div>
-            <div style="font-size: 0.74rem; color: var(--text-dim); margin-top: 1px;">
-              Alamat: RT {{ selectedMember.rtRw }} • Bergabung sejak {{ selectedMember.joinedDate }}
+            <div class="text-xs text-neutral-500 mt-0.5">
+              Alamat: RT {{ selectedMember.rtRw }} • Bergabung {{ selectedMember.joinedDate }}
             </div>
           </div>
-          <button type="button" class="btn-close" @click="selectedMember = null">✕</button>
+          <button type="button" class="btn-close active:scale-90 transition-transform" @click="selectedMember = null">
+            <AppIcon name="x" size="md" />
+          </button>
         </div>
 
-        <div style="margin: 14px 0;">
-          <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
+        <div style="margin: 12px 0;">
+          <div class="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
             Profil Pekarangan
           </div>
-          <div style="background: #f8faf9; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.78rem;">
+          <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-3 mb-3 text-xs leading-relaxed">
+            <div class="grid grid-cols-2 gap-2">
               <div>
-                <span style="color: var(--text-dim);">Status Lahan:</span><br />
-                <strong style="color: var(--text-main);">{{ selectedMember.statusLahan }}</strong>
+                <span class="text-neutral-500">Status Lahan:</span><br />
+                <strong class="text-neutral-800">{{ selectedMember.statusLahan }}</strong>
               </div>
               <div>
-                <span style="color: var(--text-dim);">Estimasi Luas:</span><br />
-                <strong style="color: var(--text-main);">{{ selectedMember.estimasiLuas }}</strong>
+                <span class="text-neutral-500">Estimasi Luas:</span><br />
+                <strong class="text-neutral-800">{{ selectedMember.estimasiLuas }}</strong>
               </div>
-              <div style="grid-column: span 2;">
-                <span style="color: var(--text-dim);">Zonasi Penempatan:</span><br />
-                <strong style="color: var(--text-main);">{{ selectedMember.zonasi.join(', ') }}</strong>
+              <div class="col-span-2">
+                <span class="text-neutral-500">Zonasi:</span><br />
+                <strong class="text-neutral-800">{{ selectedMember.zonasi.join(', ') }}</strong>
               </div>
             </div>
           </div>
 
-          <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
+          <div class="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
             Komoditas yang Dibudidayakan
           </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+          <div class="flex flex-wrap gap-1.5 mb-3">
             <div 
               v-for="(k, i) in selectedMember.komoditas" 
               :key="i"
-              style="display: flex; align-items: center; gap: 6px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 6px 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;"
+              class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-lg text-xs font-semibold"
             >
-              <span>{{ k.icon }}</span>
-              <span>{{ k.name }}</span>
+              <AppIcon name="leaf" size="xs" class="text-emerald-600" />
+              <span>{{ cleanEmoji(k.name) }}</span>
             </div>
           </div>
 
-          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; background: #f8faf9; padding: 12px; border-radius: 10px; border: 1px solid #e5e7eb;">
+          <p class="text-xs text-neutral-600 leading-relaxed bg-neutral-50 p-3 rounded-lg border border-neutral-200">
             "{{ selectedMember.bio }}"
           </p>
         </div>
 
-        <div style="display: flex; gap: 8px;">
+        <div class="flex gap-2">
           <button 
             type="button" 
-            class="btn btn-outline btn-full" 
+            class="btn btn-outline btn-full active:scale-98 transition-transform" 
             @click="selectedMember = null"
           >
             Tutup
           </button>
           <button 
             type="button" 
-            class="btn btn-whatsapp btn-full"
+            class="btn btn-whatsapp btn-full active:scale-98 transition-transform flex items-center justify-center gap-1.5"
             @click="openWhatsApp(selectedMember.phone, selectedMember.name)"
           >
-            Sapa di WhatsApp
+            <AppIcon name="chat" size="xs" />
+            <span>WhatsApp</span>
           </button>
         </div>
       </div>
@@ -782,36 +829,49 @@ onMounted(() => {
   gap: 3px;
 }
 
+@media (prefers-color-scheme: dark) {
+  .segmented-control {
+    background: #1e293b;
+  }
+}
+
 .seg-btn {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 8px 6px;
+  padding: 7px 6px;
   border: none;
   background: transparent;
   border-radius: 8px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: #64748b;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
 }
 
 .seg-btn.active {
   background: #ffffff;
   color: #166534;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  .seg-btn.active {
+    background: #0f172a;
+    color: #4ade80;
+  }
 }
 
 .seg-badge {
-  font-size: 0.65rem;
-  background: #22c55e;
+  font-size: 0.62rem;
+  background: #16a34a;
   color: #ffffff;
   padding: 1px 5px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .subtab-content {
@@ -839,12 +899,12 @@ onMounted(() => {
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 999px;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-main, #334155);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: all 0.12s ease;
 }
 
 .cat-chip.active {
@@ -857,25 +917,25 @@ onMounted(() => {
 .feed-stream {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .feed-card {
-  padding: 14px;
+  padding: 12px 14px;
   border: 1px solid var(--border, #e5e7eb);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .feed-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .feed-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: #dcfce7;
   color: #166534;
@@ -883,7 +943,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   flex-shrink: 0;
 }
 
@@ -899,8 +959,8 @@ onMounted(() => {
 }
 
 .feed-author-name {
-  font-size: 0.86rem;
-  font-weight: 800;
+  font-size: 0.84rem;
+  font-weight: 700;
   color: var(--text-main, #1e293b);
   white-space: nowrap;
   overflow: hidden;
@@ -908,51 +968,51 @@ onMounted(() => {
 }
 
 .self-tag {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   background: #16a34a;
   color: #fff;
   font-weight: 800;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 3px;
 }
 
 .feed-yard-sub {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-dim, #64748b);
   margin-top: 1px;
 }
 
 .dot-sep {
-  margin: 0 4px;
+  margin: 0 3px;
 }
 
 .feed-metric-pill {
   background: #ecfdf5;
   border: 1px solid #a7f3d0;
   color: #065f46;
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 3px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
   border-radius: 6px;
   white-space: nowrap;
 }
 
 .feed-title {
-  font-size: 0.92rem;
-  font-weight: 800;
+  font-size: 0.88rem;
+  font-weight: 700;
   color: #0f172a;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 
 .feed-text {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: #334155;
-  line-height: 1.45;
-  margin: 0 0 10px;
+  line-height: 1.4;
+  margin: 0 0 8px;
 }
 
 .feed-photo-box {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e2e8f0;
@@ -960,7 +1020,7 @@ onMounted(() => {
 
 .feed-photo-img {
   width: 100%;
-  max-height: 260px;
+  max-height: 240px;
   object-fit: cover;
   display: block;
 }
@@ -968,13 +1028,13 @@ onMounted(() => {
 .mamasar-feed-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: #1e40af;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 6px;
   margin-bottom: 8px;
 }
@@ -984,7 +1044,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   border-top: 1px solid #f1f5f9;
-  padding-top: 10px;
+  padding-top: 8px;
   gap: 8px;
 }
 
@@ -998,19 +1058,15 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 4px 7px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: #475569;
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.react-btn:active {
-  transform: scale(0.95);
+  transition: all 0.12s ease;
 }
 
 .react-btn.active {
@@ -1020,18 +1076,21 @@ onMounted(() => {
 }
 
 .react-count {
-  font-size: 0.7rem;
-  opacity: 0.85;
+  font-size: 0.68rem;
+  opacity: 0.9;
 }
 
 .sapa-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: transparent;
   border: 1px solid #bbf7d0;
   color: #16a34a;
   border-radius: 6px;
   padding: 4px 8px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -1044,11 +1103,15 @@ onMounted(() => {
 
 .tier-btn {
   flex: 1;
-  padding: 8px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 4px;
   border: none;
   background: transparent;
   border-radius: 6px;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
   color: #64748b;
   cursor: pointer;
@@ -1062,34 +1125,34 @@ onMounted(() => {
 .my-rank-banner {
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
   border: 1px solid #bbf7d0;
-  padding: 12px 14px;
-  margin-bottom: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
 }
 
 .my-rank-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .my-rank-badge {
-  font-weight: 800;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 0.88rem;
   color: #15803d;
 }
 
 .my-rank-points {
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: #14532d;
   background: #dcfce7;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 6px;
 }
 
 .my-rank-desc {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: #166534;
 }
 
@@ -1097,24 +1160,24 @@ onMounted(() => {
 .podium-section {
   display: grid;
   grid-template-columns: 1fr 1.2fr 1fr;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .podium-card {
   background: var(--card-bg, #ffffff);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 10px 6px;
+  padding: 10px 4px;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
 }
 
 .podium-card.gold {
   border-color: #facc15;
   background: linear-gradient(180deg, #fefce8 0%, #ffffff 100%);
-  transform: translateY(-6px);
+  transform: translateY(-4px);
 }
 
 .podium-card.silver {
@@ -1125,44 +1188,51 @@ onMounted(() => {
   border-color: #fed7aa;
 }
 
-.podium-crown {
-  font-size: 1.4rem;
-  margin-bottom: 2px;
-}
-
 .podium-name {
-  font-size: 0.74rem;
-  font-weight: 800;
+  font-size: 0.72rem;
+  font-weight: 700;
   color: #0f172a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0 4px;
 }
 
 .podium-pts {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 800;
   color: #166534;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .podium-badge {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: #64748b;
-  margin-top: 2px;
+  margin-top: 1px;
+}
+
+.podium-badge-gold {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #854d0e;
+  background: #fef08a;
+  border-radius: 4px;
+  padding: 1px 5px;
+  display: inline-block;
+  margin-top: 1px;
 }
 
 /* RANK TABLE ROWS */
 .rank-items {
   overflow: hidden;
   border: 1px solid var(--border, #e5e7eb);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .rank-row {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: 1px solid #f1f5f9;
   gap: 10px;
 }
@@ -1175,12 +1245,42 @@ onMounted(() => {
   background: #f0fdf4;
 }
 
-.rank-number {
-  font-size: 0.95rem;
+.rank-col {
+  width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rank-num {
+  font-size: 0.82rem;
   font-weight: 800;
   color: #64748b;
-  width: 26px;
-  text-align: center;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.rank-badge.gold {
+  background: #fef08a;
+  color: #854d0e;
+}
+
+.rank-badge.silver {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.rank-badge.bronze {
+  background: #ffedd5;
+  color: #9a3412;
 }
 
 .rank-info {
@@ -1191,27 +1291,27 @@ onMounted(() => {
 .rank-name-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .rank-name {
-  font-size: 0.85rem;
-  font-weight: 800;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: #1e293b;
 }
 
 .rank-honour-pill {
-  font-size: 0.64rem;
-  font-weight: 700;
-  padding: 1px 6px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 1px 5px;
   border-radius: 4px;
   background: #f1f5f9;
   color: #475569;
 }
 
 .rank-sub {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-dim, #64748b);
   display: flex;
   gap: 4px;
@@ -1221,17 +1321,19 @@ onMounted(() => {
 
 .rank-points-col {
   text-align: right;
+  flex-shrink: 0;
 }
 
 .pts-val {
   display: block;
-  font-size: 0.92rem;
-  font-weight: 900;
+  font-size: 0.88rem;
+  font-weight: 800;
   color: #166534;
+  line-height: 1.1;
 }
 
 .pts-lbl {
-  font-size: 0.64rem;
+  font-size: 0.6rem;
   color: #94a3b8;
   text-transform: uppercase;
 }
@@ -1240,20 +1342,20 @@ onMounted(() => {
 .scoring-info-box {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  padding: 12px;
+  padding: 10px 12px;
 }
 
 .scoring-title {
-  font-size: 0.8rem;
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: #334155;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .scoring-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 
 .scoring-item {
@@ -1262,45 +1364,49 @@ onMounted(() => {
   gap: 6px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  padding: 6px 8px;
+  padding: 5px 8px;
   border-radius: 6px;
 }
 
 .sc-pts {
-  font-size: 0.76rem;
-  font-weight: 900;
+  font-size: 0.74rem;
+  font-weight: 800;
   color: #16a34a;
 }
 
 .sc-desc {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: #64748b;
   line-height: 1.2;
 }
 
 /* DIREKTORI WARGA STYLES */
 .member-count-pill {
-  font-size: 0.72rem;
-  font-weight: 800;
+  font-size: 0.7rem;
+  font-weight: 700;
   background: #e2e8f0;
   color: #475569;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: 6px;
 }
 
 .rt-filter-chips {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
   padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.rt-filter-chips::-webkit-scrollbar {
+  display: none;
 }
 
 .chip-btn {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border: 1px solid var(--border);
   background: #f8faf9;
-  border-radius: 14px;
-  font-size: 0.74rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-dim);
   cursor: pointer;
@@ -1316,15 +1422,15 @@ onMounted(() => {
 .member-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .member-card {
   background: var(--card-bg, #ffffff);
   border: 1px solid var(--border, #e5e7eb);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 8px 10px;
 }
 
 .is-owner-card {
@@ -1334,13 +1440,13 @@ onMounted(() => {
 
 .member-card-header {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
 .member-avatar {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: #e2e8f0;
   color: #475569;
@@ -1348,7 +1454,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   flex-shrink: 0;
 }
 
@@ -1358,38 +1464,37 @@ onMounted(() => {
 }
 
 .member-name {
-  font-size: 0.88rem;
-  font-weight: 800;
+  font-size: 0.84rem;
+  font-weight: 700;
   color: #0f172a;
 }
 
 .verified-icon {
-  font-size: 0.7rem;
-  background: #22c55e;
+  background: #16a34a;
   color: #fff;
   border-radius: 50%;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .member-meta {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
   display: flex;
   gap: 4px;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .member-card-actions {
   display: flex;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 6px;
   border-top: 1px solid #f1f5f9;
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
 .btn-whatsapp {
@@ -1421,10 +1526,10 @@ onMounted(() => {
   max-width: 480px;
   background: #ffffff !important;
   border-top: 1px solid #e5e7eb;
-  border-radius: 24px 24px 0 0;
-  padding: 16px 20px calc(18px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
-  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 20px 20px 0 0;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.28);
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   z-index: 2001;
   max-height: 90vh;
@@ -1434,28 +1539,30 @@ onMounted(() => {
 .modal-card::before {
   content: '';
   display: block;
-  width: 36px;
-  height: 4px;
+  width: 32px;
+  height: 3.5px;
   background: #cbd5e1;
   border-radius: 2px;
-  margin: 0 auto 12px;
+  margin: 0 auto 10px;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding-bottom: 12px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 
 .btn-close {
   background: transparent;
   border: none;
-  font-size: 1.2rem;
   color: var(--text-dim);
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @keyframes slideUp {

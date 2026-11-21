@@ -1070,9 +1070,9 @@ export const TursoService = {
 
         const isCurrent = !!userCleanPhone && cleanPhone(phone) === userCleanPhone;
 
-        let badge = 'Penggiat Hijau 🌿';
-        if (pilarCount >= 3) badge = 'Pilar Paripurna ⭐';
-        else if (totalAssets >= 8) badge = 'Pekarangan Subur 🌱';
+        let badge = 'Penggiat Hijau';
+        if (pilarCount >= 3) badge = 'Pilar Paripurna';
+        else if (totalAssets >= 8) badge = 'Pekarangan Subur';
 
         return {
           rank: 0,
@@ -1092,9 +1092,9 @@ export const TursoService = {
       rawFamilies.sort((a, b) => b.totalPoints - a.totalPoints);
       rawFamilies.forEach((f, idx) => {
         f.rank = idx + 1;
-        if (f.rank === 1) f.badge = 'Juara Utama 👑';
-        else if (f.rank === 2) f.badge = 'Teladan Desa 🥈';
-        else if (f.rank === 3) f.badge = 'Bintang Hijau 🥉';
+        if (f.rank === 1) f.badge = 'Juara Utama';
+        else if (f.rank === 2) f.badge = 'Teladan Desa';
+        else if (f.rank === 3) f.badge = 'Bintang Hijau';
       });
 
       const rantingMap = new Map<string, {
@@ -1125,15 +1125,15 @@ export const TursoService = {
         totalPoints: r.totalPoints + (r.familiesCount * 50),
         totalHarvestKg: Math.round(r.totalPoints * 0.08),
         totalEggs: Math.round(r.totalPoints * 0.15),
-        badge: 'Ranting Guyub 🤝'
+        badge: 'Ranting Guyub'
       }));
 
       rawRantings.sort((a, b) => b.totalPoints - a.totalPoints);
       rawRantings.forEach((r, idx) => {
         r.rank = idx + 1;
-        if (r.rank === 1) r.badge = 'Ranting Terdaulat 🏆';
-        else if (r.rank === 2) r.badge = 'Ranting Asri 🥈';
-        else if (r.rank === 3) r.badge = 'Ranting Mandiri 🥉';
+        if (r.rank === 1) r.badge = 'Ranting Terdaulat';
+        else if (r.rank === 2) r.badge = 'Ranting Asri';
+        else if (r.rank === 3) r.badge = 'Ranting Mandiri';
       });
 
       const mwcMap = new Map<string, {
@@ -1164,14 +1164,14 @@ export const TursoService = {
         activeFamiliesCount: m.familiesCount,
         totalPoints: m.totalPoints + (m.familiesCount * 100),
         mamasarProductsCount: Math.round(m.totalPoints / 120),
-        badge: 'MWC Berdaya 🌟'
+        badge: 'MWC Berdaya'
       }));
 
       rawMwc.sort((a, b) => b.totalPoints - a.totalPoints);
       rawMwc.forEach((m, idx) => {
         m.rank = idx + 1;
-        if (m.rank === 1) m.badge = 'MWC Daulat Pangan 🥇';
-        else if (m.rank === 2) m.badge = 'MWC Progresif 🥈';
+        if (m.rank === 1) m.badge = 'MWC Daulat Pangan';
+        else if (m.rank === 2) m.badge = 'MWC Progresif';
       });
 
       return {

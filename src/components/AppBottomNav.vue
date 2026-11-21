@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppIcon from './AppIcon.vue';
+
 export type AppNavTab = 'home' | 'record' | 'community' | 'profile';
 
 const props = defineProps<{
@@ -30,169 +32,280 @@ const handleSurveyClick = () => {
     <!-- 1. Home / Beranda -->
     <button 
       type="button" 
-      class="nav-btn" 
+      class="nav-tab-btn" 
       :class="{ active: activeTab === 'home' && !isSurveyMode }"
       @click="$emit('changeTab', 'home')"
     >
-      <span class="nav-icon">🏡</span>
-      <span class="nav-label">Beranda</span>
+      <AppIcon name="home" size="lg" class="nav-svg-icon" />
+      <span class="nav-tab-label">Beranda</span>
     </button>
 
     <!-- 2. Catat / Pusat Pencatatan -->
     <button 
       type="button" 
-      class="nav-btn" 
+      class="nav-tab-btn relative" 
       :class="{ active: activeTab === 'record' && !isSurveyMode }"
       @click="$emit('changeTab', 'record')"
     >
-      <span class="nav-icon">📝</span>
-      <span class="nav-label">Catat</span>
-      <span 
-        v-if="surveyQueueCount > 0" 
-        style="position: absolute; top: -3px; right: 2px; background: #dc2626; color: #fff; font-size: 0.6rem; padding: 1px 5px; border-radius: 999px; font-weight: 700;"
-      >
-        {{ surveyQueueCount }}
-      </span>
+      <div class="relative inline-flex items-center justify-center">
+        <AppIcon name="clipboard" size="lg" class="nav-svg-icon" />
+        <span 
+          v-if="surveyQueueCount > 0" 
+          class="queue-badge font-mono"
+        >
+          {{ surveyQueueCount }}
+        </span>
+      </div>
+      <span class="nav-tab-label">Catat</span>
     </button>
 
-    <!-- 3. TOMBOL TENGAH KAMERA BAWAAN APLIKASI / SURVEY ACTION -->
-    <div class="center-camera-wrapper">
+    <!-- 3. TOMBOL TENGAH TIKTOK STYLE / SURVEY ACTION -->
+    <div class="center-action-slot">
       <!-- Tombol saat mode survei (Fase 1) -->
       <button 
         v-if="isSurveyMode"
         type="button"
-        class="survey-center-btn"
+        class="survey-step-btn"
         :disabled="isSubmitting"
         @click="handleSurveyClick"
       >
-        <span v-if="isSubmitting" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
-        <span v-else-if="currentStep === 4" class="nav-icon">💾</span>
-        <span v-else class="nav-icon" style="font-size: 18px; font-weight: bold;">➔</span>
-        <span class="survey-center-label">{{ currentStep === 4 ? 'Simpan' : 'Lanjut' }}</span>
+        <span v-if="isSubmitting" class="spinner" style="width: 15px; height: 15px; border-width: 2px;"></span>
+        <AppIcon v-else-if="currentStep === 4" name="save" size="sm" class="text-white" />
+        <AppIcon v-else name="arrow-right" size="sm" class="text-white" />
+        <span class="survey-step-label">{{ currentStep === 4 ? 'Simpan' : 'Lanjut' }}</span>
       </button>
 
-      <!-- Tombol Kamera Bawaan Aplikasi -->
+      <!-- Tombol Buat Kabar ala TikTok (Center Post / Camera Trigger) -->
       <button 
         v-else
         type="button" 
-        class="camera-center-btn"
+        class="tiktok-create-btn"
         @click="$emit('openCamera')"
         title="Buka Kamera Bawaan Pekarangan"
+        aria-label="Kabarkan Pekarangan"
       >
-        <svg class="camera-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-          <circle cx="12" cy="13" r="4"></circle>
-        </svg>
-        <span class="camera-plus-badge">+</span>
+        <div class="tiktok-btn-plate">
+          <!-- Cyan accent layer left -->
+          <div class="tiktok-wing cyan-wing"></div>
+          <!-- Emerald accent layer right -->
+          <div class="tiktok-wing emerald-wing"></div>
+          <!-- Dark central core -->
+          <div class="tiktok-core">
+            <AppIcon name="plus" size="sm" class="tiktok-icon text-white" stroke-width="2.6" />
+          </div>
+        </div>
       </button>
     </div>
 
     <!-- 4. Community / Komunitas Warga -->
     <button 
       type="button" 
-      class="nav-btn" 
+      class="nav-tab-btn" 
       :class="{ active: activeTab === 'community' && !isSurveyMode }"
       @click="$emit('changeTab', 'community')"
     >
-      <span class="nav-icon">👥</span>
-      <span class="nav-label">Komunitas</span>
+      <AppIcon name="users" size="lg" class="nav-svg-icon" />
+      <span class="nav-tab-label">Komunitas</span>
     </button>
 
     <!-- 5. Profile / Profil & Database -->
     <button 
       type="button" 
-      class="nav-btn" 
+      class="nav-tab-btn" 
       :class="{ active: activeTab === 'profile' && !isSurveyMode }"
       @click="$emit('changeTab', 'profile')"
     >
-      <span class="nav-icon">👤</span>
-      <span class="nav-label">Profil</span>
+      <AppIcon name="user" size="lg" class="nav-svg-icon" />
+      <span class="nav-tab-label">Profil</span>
     </button>
   </nav>
 </template>
 
 <style scoped>
-.center-camera-wrapper {
+.app-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(226, 232, 240, 0.85);
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  flex: 0 0 62px;
-  height: 100%;
+  justify-content: space-around;
+  z-index: 1000;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 4px calc(env(safe-area-inset-bottom, 0px) / 2);
+  box-sizing: border-box;
 }
 
-.camera-center-btn {
-  position: relative;
-  top: -14px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 60%, #15803d 100%);
-  border: 3.5px solid #ffffff;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.42);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
-  user-select: none;
-  padding: 0;
+@media (prefers-color-scheme: dark) {
+  .app-bottom-nav {
+    background: rgba(15, 23, 42, 0.94);
+    border-top: 1px solid rgba(30, 41, 59, 0.85);
+  }
 }
 
-.camera-center-btn:active {
-  transform: translateY(2px) scale(0.92);
-  box-shadow: 0 2px 10px rgba(22, 163, 74, 0.3);
-}
-
-.camera-icon-svg {
-  width: 25px;
-  height: 25px;
-  stroke: #ffffff;
-}
-
-.camera-plus-badge {
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
-  background: #ffffff;
-  color: #16a34a;
-  font-size: 11px;
-  font-weight: 900;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-  line-height: 1;
-}
-
-.survey-center-btn {
-  background: linear-gradient(135deg, #16a34a, #15803d);
-  color: #ffffff;
-  border: none;
-  border-radius: 20px;
-  padding: 6px 14px;
+.nav-tab-btn {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #64748b;
   cursor: pointer;
-  min-width: 58px;
-  transition: transform 0.12s ease;
+  padding: 4px 0;
+  transition: color 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.survey-center-btn:active {
-  transform: scale(0.95);
+.nav-tab-btn:active {
+  transform: scale(0.92);
 }
 
-.survey-center-label {
-  font-size: 0.62rem;
-  font-weight: 800;
+.nav-svg-icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.85;
+}
+
+.nav-tab-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.nav-tab-btn.active {
+  color: #16a34a;
+}
+
+.nav-tab-btn.active .nav-tab-label {
+  font-weight: 700;
+}
+
+.queue-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background: #dc2626;
   color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.35);
+}
+
+/* ================= CENTER ACTION SLOT ================= */
+.center-action-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 54px;
+  height: 100%;
+  position: relative;
+}
+
+/* TIKTOK STYLE CREATE BUTTON */
+.tiktok-create-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tiktok-create-btn:active {
+  transform: scale(0.88);
+}
+
+.tiktok-btn-plate {
+  position: relative;
+  width: 44px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tiktok-wing {
+  position: absolute;
+  top: 0;
+  width: 38px;
+  height: 30px;
+  border-radius: 9px;
+}
+
+.cyan-wing {
+  left: 0;
+  background: #00f2fe;
+}
+
+.emerald-wing {
+  right: 0;
+  background: #10b981;
+}
+
+.tiktok-core {
+  position: relative;
+  z-index: 2;
+  width: 38px;
+  height: 30px;
+  background: #0f172a;
+  border-radius: 8.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.tiktok-icon {
+  width: 17px;
+  height: 17px;
+}
+
+/* SURVEY STEP BUTTON */
+.survey-step-btn {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #ffffff;
+  border: none;
+  border-radius: 18px;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35);
+  cursor: pointer;
+  min-width: 54px;
+  transition: transform 0.1s ease;
+}
+
+.survey-step-btn:active {
+  transform: scale(0.94);
+}
+
+.survey-step-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
 }
 </style>

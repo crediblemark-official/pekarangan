@@ -14,6 +14,7 @@ import RecordHub from './components/RecordHub.vue';
 import ProfileView from './components/ProfileView.vue';
 import OnboardingSetup from './components/OnboardingSetup.vue';
 import InAppCameraModal from './components/InAppCameraModal.vue';
+import AppIcon from './components/AppIcon.vue';
 import { SecurityService } from './services/security';
 
 // Survey Step Components (Fase 1)
@@ -40,9 +41,9 @@ const currentStep = ref(1);
 
 const currentNavTitle = computed(() => {
   switch (activeNavTab.value) {
-    case 'community': return '👥 Direktori Komunitas';
-    case 'record': return '📝 Pusat Pencatatan';
-    case 'profile': return '👤 Identitas Pekarangan';
+    case 'community': return 'Komunitas Warga';
+    case 'record': return 'Pusat Pencatatan';
+    case 'profile': return 'Identitas Pekarangan';
     default: return 'Pekarangan';
   }
 });
@@ -628,8 +629,10 @@ onMounted(() => {
 
     <!-- Toast Notification -->
     <div v-if="toast.show" class="toast-container">
-      <div :class="['toast', `toast-${toast.type}`]">
-        <span>{{ toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : '❌' }}</span>
+      <div :class="['toast', `toast-${toast.type}`]" class="flex items-center gap-1.5 font-medium">
+        <AppIcon v-if="toast.type === 'success'" name="check" size="xs" />
+        <AppIcon v-else-if="toast.type === 'warning'" name="alert" size="xs" />
+        <AppIcon v-else name="x" size="xs" />
         <span>{{ toast.message }}</span>
       </div>
     </div>

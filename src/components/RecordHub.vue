@@ -5,6 +5,7 @@ import { StorageService } from '../services/storage';
 import { ApiService } from '../services/api';
 import { TursoService, isTursoConfigured } from '../services/turso';
 import SearchableSelect, { type SelectOption } from './SearchableSelect.vue';
+import AppIcon from './AppIcon.vue';
 
 const emit = defineEmits<{
   (e: 'openSurvey'): void;
@@ -318,10 +319,10 @@ const saveEggLog = () => {
   emit('showToast', `Berhasil mencatat +${count} telur untuk ${live.name} (Total hari ini: ${live.todayYield})`);
 
   shareKabarData.value = {
-    title: `Pungut ${count} Butir Telur Segar 🥚`,
+    title: `Pungut ${count} Butir Telur Segar`,
     content: `Alhamdulillah produksi telur hari ini bertambah +${count} butir dari kandang ${live.name}. Total hari ini terkumpul ${live.todayYield} butir untuk kebutuhan keluarga!`,
     category: 'ternak',
-    metricBadge: `🥚 ${count} Butir`,
+    metricBadge: `${count} Butir`,
     isMamasarProduct: false
   };
   showShareKabarModal.value = true;
@@ -403,7 +404,7 @@ const saveHarvest = () => {
     title: `Alhamdulillah Panen ${plantName}!`,
     content: `Alhamdulillah hasil panen ${plantName} (${harvestForm.value.qty}) dipetik hari ini. ${allocationNotes[harvestForm.value.allocation] || ''}`,
     category: 'panen',
-    metricBadge: `🌾 ${harvestForm.value.qty}`,
+    metricBadge: `Panen ${harvestForm.value.qty}`,
     isMamasarProduct: harvestForm.value.allocation === 'olahan_rpp'
   };
   showShareKabarModal.value = true;
@@ -1125,33 +1126,36 @@ const saveQuickConsume = () => {
       </div>
     </div>
 
-    <!-- MODAL: TAWURAN KABARKAN PANEN KE KOMUNITAS -->
+    <!-- MODAL: KABARKAN PANEN KE KOMUNITAS -->
     <div v-if="showShareKabarModal && shareKabarData" class="modal-backdrop" @click.self="showShareKabarModal = false">
       <div class="modal-sheet" style="text-align: center;">
-        <div style="font-size: 2.4rem; margin-bottom: 6px;">🎉</div>
-        <h3 style="font-size: 1rem; font-weight: 800; color: #166534; margin-bottom: 4px;">
-          Catatan Berhasil Disimpan!
+        <div class="inline-flex items-center justify-center w-11 h-11 rounded-full bg-emerald-100 text-emerald-700 mb-2 mx-auto">
+          <AppIcon name="sparkles" size="md" />
+        </div>
+        <h3 style="font-size: 0.95rem; font-weight: 700; color: #166534; margin-bottom: 3px;">
+          Catatan Berhasil Disimpan
         </h3>
-        <p style="font-size: 0.8rem; color: #475569; margin-bottom: 14px; line-height: 1.4;">
-          Mau kabarkan hasil ini ke <strong>"Apa Kabar Pekaranganmu?"</strong> untuk pamer kebaikan & menambah poin Fastabiqul Khairat keluarga Anda?
+        <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 12px; line-height: 1.4;">
+          Bagikan kabar hasil pekarangan ini ke <strong>"Apa Kabar Pekaranganmu?"</strong> untuk syiar kebaikan & poin Fastabiqul Khairat.
         </p>
 
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: left; margin-bottom: 14px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: left; margin-bottom: 12px;">
           <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">{{ shareKabarData.title }}</div>
           <div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">{{ shareKabarData.content }}</div>
           <div style="margin-top: 6px;">
-            <span style="font-size: 0.68rem; background: #ecfdf5; color: #065f46; font-weight: 800; padding: 2px 6px; border-radius: 4px;">
+            <span class="font-mono" style="font-size: 0.68rem; background: #ecfdf5; color: #065f46; font-weight: 700; padding: 2px 6px; border-radius: 4px;">
               {{ shareKabarData.metricBadge }}
             </span>
           </div>
         </div>
 
         <div style="display: flex; gap: 8px;">
-          <button type="button" class="btn btn-outline btn-full" @click="showShareKabarModal = false">
+          <button type="button" class="btn btn-outline btn-full active:scale-98 transition-transform" style="font-size: 0.8rem; padding: 8px;" @click="showShareKabarModal = false">
             Nanti Saja
           </button>
-          <button type="button" class="btn btn-primary btn-full" style="background: #16a34a; border-color: #16a34a;" @click="confirmShareKabar">
-            📢 Bagikan Sekarang
+          <button type="button" class="btn btn-primary btn-full active:scale-98 transition-transform flex items-center justify-center gap-1.5" style="background: #16a34a; border-color: #16a34a; font-size: 0.8rem; padding: 8px;" @click="confirmShareKabar">
+            <AppIcon name="send" size="xs" class="text-white" />
+            <span>Bagikan</span>
           </button>
         </div>
       </div>

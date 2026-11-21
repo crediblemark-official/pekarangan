@@ -4,6 +4,7 @@ import type { KabarCategory, CommunityPostItem } from '../types';
 import { StorageService } from '../services/storage';
 import { TursoService, isTursoConfigured } from '../services/turso';
 import { CameraService } from '../services/camera';
+import AppIcon from './AppIcon.vue';
 
 const props = defineProps<{
   show: boolean;
@@ -37,20 +38,20 @@ const isMamasar = ref(false);
 const isSubmitting = ref(false);
 
 const CATEGORIES = [
-  { id: 'panen', label: 'Panen', icon: '🌾' },
-  { id: 'tanam', label: 'Tanam', icon: '🌱' },
-  { id: 'ternak', label: 'Telur/Ternak', icon: '🥚' },
-  { id: 'dapur', label: 'Dapur Hemat', icon: '🍳' },
-  { id: 'apotek', label: 'Apotek Hidup', icon: '💊' },
-  { id: 'sedekah', label: 'Sedekah', icon: '🤝' },
-  { id: 'rpp', label: 'Olahan RPP', icon: '🧺' }
+  { id: 'panen', label: 'Panen', icon: 'wheat' },
+  { id: 'tanam', label: 'Tanam', icon: 'sprout' },
+  { id: 'ternak', label: 'Ternak', icon: 'egg' },
+  { id: 'dapur', label: 'Dapur', icon: 'utensils' },
+  { id: 'apotek', label: 'Apotek', icon: 'pill' },
+  { id: 'sedekah', label: 'Sedekah', icon: 'heart-handshake' },
+  { id: 'rpp', label: 'RPP', icon: 'package' }
 ];
 
 const CAPTION_SUGGESTIONS = [
-  'Alhamdulillah panen segar hari ini! 🌾',
-  'Pungut telur ayam pekarangan segar 🥚',
-  'Semai bibit tanaman baru di polybag 🌱',
-  'Masak sayur organik dari kebun sendiri 🍳'
+  'Panen segar hari ini dari pekarangan',
+  'Pungut telur pekarangan segar',
+  'Semai bibit baru di polybag',
+  'Masak sayur organik hasil kebun sendiri'
 ];
 
 const stopCameraStream = () => {
@@ -159,13 +160,13 @@ const applySuggestion = (sug: string) => {
   if (!caption.value.trim()) {
     caption.value = sug;
   } else {
-    caption.value += ' ' + sug;
+    caption.value += '. ' + sug;
   }
 };
 
 const handleShare = async () => {
   if (!caption.value.trim()) {
-    emit('showToast', 'Beri sedikit cerita atau caption untuk foto pekarangan Anda', 'warning');
+    emit('showToast', 'Beri sedikit catatan kabar untuk foto pekarangan Anda', 'warning');
     return;
   }
 
@@ -214,7 +215,7 @@ const handleShare = async () => {
   stopCameraStream();
   emit('postCreated', newPost);
   emit('close');
-  emit('showToast', 'Alhamdulillah! Kabar pekarangan berhasil dibagikan ke warga.', 'success');
+  emit('showToast', 'Kabar pekarangan berhasil dibagikan ke warga.', 'success');
 };
 
 const handleClose = () => {
@@ -234,7 +235,7 @@ onBeforeUnmount(() => {
 <template>
   <div v-if="show" class="camera-modal-backdrop">
     <!-- =================================================================== -->
-    <!-- MODE 1: VIEWFINDER (KAMERA BAWAAN LANGSUNG STREAMING DI APLIKASI)  -->
+    <!-- MODE 1: VIEWFINDER (KAMERA LANGSUNG DI DALAM APLIKASI)              -->
     <!-- =================================================================== -->
     <div v-if="mode === 'viewfinder'" class="viewfinder-container">
       <!-- White Flash on Shutter -->
@@ -242,12 +243,29 @@ onBeforeUnmount(() => {
 
       <!-- Top Bar: Close & Camera Indicator -->
       <div class="viewfinder-top-bar">
-        <button type="button" class="btn-camera-close" @click="handleClose" title="Tutup Kamera">
-          ✕
+        <button 
+          type="button" 
+          class="btn-camera-ctrl active:scale-90 transition-transform" 
+          @click="handleClose" 
+          title="Tutup Kamera"
+          aria-label="Tutup Kamera"
+        >
+          <AppIcon name="x" size="md" class="text-white" />
         </button>
-        <span class="camera-badge-title">🌱 Kamera Pekarangan</span>
-        <button type="button" class="btn-camera-switch" @click="switchCamera" title="Balik Kamera">
-          🔄
+        
+        <div class="camera-badge-title">
+          <AppIcon name="sprout" size="xs" class="text-emerald-400" />
+          <span>Kamera Pekarangan</span>
+        </div>
+
+        <button 
+          type="button" 
+          class="btn-camera-ctrl active:scale-90 transition-transform" 
+          @click="switchCamera" 
+          title="Balik Kamera"
+          aria-label="Balik Kamera"
+        >
+          <AppIcon name="refresh" size="md" class="text-white" />
         </button>
       </div>
 
@@ -263,24 +281,24 @@ onBeforeUnmount(() => {
 
         <!-- Loading Spinner -->
         <div v-if="isCameraLoading" class="camera-loading-overlay">
-          <div class="spinner" style="width: 36px; height: 36px; border-width: 3px; border-color: #22c55e; border-top-color: transparent;"></div>
-          <span style="color: #ffffff; font-size: 0.8rem; margin-top: 10px; font-weight: 700;">Menghubungkan kamera...</span>
+          <div class="spinner" style="width: 32px; height: 32px; border-width: 3px; border-color: #22c55e; border-top-color: transparent;"></div>
+          <span class="text-xs text-neutral-300 font-medium mt-3">Menghubungkan sensor kamera...</span>
         </div>
 
         <!-- Error State / Fallback -->
         <div v-if="cameraError" class="camera-error-overlay">
-          <div style="font-size: 2.2rem; margin-bottom: 8px;">📷</div>
-          <div style="font-weight: 800; font-size: 0.95rem; color: #ffffff; margin-bottom: 4px;">Kamera Langsung Tidak Tersedia</div>
-          <div style="font-size: 0.76rem; color: #cbd5e1; max-width: 280px; margin-bottom: 14px; line-height: 1.4;">
+          <AppIcon name="camera" size="xl" class="text-neutral-400 mb-2" />
+          <div class="text-sm font-semibold text-white mb-1">Kamera Tidak Tersedia</div>
+          <div class="text-xs text-neutral-400 max-w-xs mb-4 leading-relaxed">
             {{ cameraError }}
           </div>
           <button 
             type="button" 
-            class="btn btn-primary"
-            style="background: #16a34a; border-color: #16a34a; font-size: 0.82rem; padding: 8px 16px;"
+            class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg active:scale-95 transition-transform"
             @click="fileFallbackRef?.click()"
           >
-            📁 Ambil dari Galeri / Kamera Luar
+            <AppIcon name="image" size="sm" />
+            <span>Pilih dari Galeri</span>
           </button>
         </div>
       </div>
@@ -293,17 +311,19 @@ onBeforeUnmount(() => {
           class="control-btn gallery-btn" 
           @click="fileFallbackRef?.click()"
           title="Buka Galeri Foto"
+          aria-label="Galeri"
         >
-          🖼️
+          <AppIcon name="image" size="lg" class="text-white" />
         </button>
 
-        <!-- Shutter Button (Lingkaran Putih Ganda ala Kamera Modern) -->
+        <!-- Shutter Button (Lingkaran Putih Tactile) -->
         <button 
           type="button" 
           class="shutter-btn" 
           :disabled="isCameraLoading || !!cameraError"
           @click="takeShutter"
           title="Jepret Foto"
+          aria-label="Ambil Foto"
         >
           <div class="shutter-inner"></div>
         </button>
@@ -312,10 +332,11 @@ onBeforeUnmount(() => {
         <button 
           type="button" 
           class="control-btn flip-btn" 
-          @click="switchCamera"
+          @click="switchCamera" 
           title="Ganti Kamera Depan/Belakang"
+          aria-label="Balik Kamera"
         >
-          🔁
+          <AppIcon name="refresh" size="lg" class="text-white" />
         </button>
       </div>
 
@@ -330,29 +351,44 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- =================================================================== -->
-    <!-- MODE 2: CAPTION & BAGIKAN (PRATINJAU FOTO & INPUT CAPTION)           -->
+    <!-- MODE 2: CAPTION & BAGIKAN (FULL-EDGE BOTTOM SHEET ANTI-SLOP)         -->
     <!-- =================================================================== -->
     <div v-else-if="mode === 'caption'" class="caption-container">
       <div class="caption-sheet">
         <div class="sheet-top-row">
           <div class="sheet-title-info">
-            <span class="sheet-heading">📸 Kabar Pekarangan</span>
-            <span class="sheet-subheading">Keren! Foto siap dibagikan ke warga NU</span>
+            <div class="flex items-center gap-1.5">
+              <AppIcon name="camera" size="sm" class="text-emerald-600" />
+              <span class="sheet-heading">Kabar Pekarangan</span>
+            </div>
+            <span class="sheet-subheading">Ceritakan perkembangan pekarangan Anda</span>
           </div>
-          <button type="button" class="btn-sheet-close" @click="handleClose">✕</button>
+          <button 
+            type="button" 
+            class="btn-sheet-close active:scale-90 transition-transform" 
+            @click="handleClose"
+            aria-label="Tutup"
+          >
+            <AppIcon name="x" size="md" />
+          </button>
         </div>
 
         <!-- Photo Preview with Retake -->
         <div class="preview-box">
           <img :src="capturedPhotoUrl" alt="Foto Hasil Jepretan" class="preview-img" />
-          <button type="button" class="btn-retake-floating" @click="retakePhoto">
-            <span>🔄 Foto Ulang</span>
+          <button 
+            type="button" 
+            class="btn-retake-floating active:scale-95 transition-transform" 
+            @click="retakePhoto"
+          >
+            <AppIcon name="refresh" size="xs" />
+            <span>Foto Ulang</span>
           </button>
         </div>
 
         <!-- Category Picker -->
         <div class="cat-picker-box">
-          <div class="cat-label">Pilih Kategori:</div>
+          <div class="cat-label">Kategori Kabar</div>
           <div class="cat-scroll">
             <button 
               v-for="cat in CATEGORIES" 
@@ -362,7 +398,7 @@ onBeforeUnmount(() => {
               :class="{ active: selectedCategory === cat.id }"
               @click="selectedCategory = cat.id as KabarCategory"
             >
-              <span>{{ cat.icon }}</span>
+              <AppIcon :name="cat.icon" size="xs" />
               <span>{{ cat.label }}</span>
             </button>
           </div>
@@ -374,7 +410,7 @@ onBeforeUnmount(() => {
             v-model="caption" 
             rows="3" 
             class="caption-textarea" 
-            placeholder="Tulis caption kabar pekaranganmu... (misal: Alhamdulillah panen cabai rawit merah segar di teras depan 🌶️)"
+            placeholder="Tulis catatan kabar pekaranganmu... (contoh: Alhamdulillah panen bayam dan cabai rawit segar hari ini)"
             autofocus
           ></textarea>
 
@@ -384,7 +420,7 @@ onBeforeUnmount(() => {
               v-for="(sug, idx) in CAPTION_SUGGESTIONS" 
               :key="idx"
               type="button" 
-              class="sug-chip" 
+              class="sug-chip active:scale-95 transition-transform" 
               @click="applySuggestion(sug)"
             >
               {{ sug }}
@@ -395,23 +431,32 @@ onBeforeUnmount(() => {
         <!-- Mamasar Checkbox jika RPP -->
         <div v-if="selectedCategory === 'rpp'" class="mamasar-box">
           <label class="mamasar-label">
-            <input type="checkbox" v-model="isMamasar" />
-            <span>🧺 Tandai siap dipasarkan ke Mamasar (Hilir UMKM)</span>
+            <input type="checkbox" v-model="isMamasar" class="accent-emerald-600 rounded" />
+            <div class="flex items-center gap-1.5">
+              <AppIcon name="package" size="xs" class="text-emerald-700" />
+              <span>Tandai produk olahan siap dipasarkan (Mamasar)</span>
+            </div>
           </label>
         </div>
 
-        <!-- Bottom Actions -->
+        <!-- Bottom Actions (One-Word Button Rule) -->
         <div class="sheet-actions">
-          <button type="button" class="btn btn-outline btn-half" @click="handleClose">
+          <button 
+            type="button" 
+            class="btn-sheet-cancel active:scale-[0.98] transition-transform" 
+            @click="handleClose"
+          >
             Batal
           </button>
           <button 
             type="button" 
-            class="btn btn-primary btn-submit-full" 
+            class="btn-sheet-submit active:scale-[0.98] transition-transform" 
             :disabled="isSubmitting"
             @click="handleShare"
           >
-            {{ isSubmitting ? 'Mengirim...' : '🚀 Bagikan Kabar' }}
+            <AppIcon v-if="!isSubmitting" name="send" size="sm" class="text-white" />
+            <span v-if="isSubmitting" class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+            <span>{{ isSubmitting ? 'Mengirim' : 'Bagikan' }}</span>
           </button>
         </div>
       </div>
@@ -430,9 +475,7 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-/* =================================================================== */
-/* VIEWFINDER STYLES (FULL SCREEN LIVE CAMERA)                         */
-/* =================================================================== */
+/* ================= VIEWFINDER ================= */
 .viewfinder-container {
   width: 100%;
   max-width: 480px;
@@ -466,15 +509,14 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 12px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 100%);
 }
 
-.btn-camera-close, .btn-camera-switch {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+.btn-camera-ctrl {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #ffffff;
-  font-size: 1.1rem;
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -482,17 +524,22 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
 }
 
 .camera-badge-title {
   color: #ffffff;
-  font-size: 0.82rem;
-  font-weight: 800;
-  background: rgba(0, 0, 0, 0.4);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: rgba(15, 23, 42, 0.55);
   padding: 4px 12px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(6px);
 }
 
 .video-wrapper {
@@ -515,7 +562,7 @@ onBeforeUnmount(() => {
 .camera-loading-overlay, .camera-error-overlay {
   position: absolute;
   inset: 0;
-  background: #0f172a;
+  background: #090d16;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -538,38 +585,37 @@ onBeforeUnmount(() => {
 }
 
 .control-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #ffffff;
-  font-size: 1.25rem;
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  backdrop-filter: blur(6px);
-  transition: transform 0.12s;
+  backdrop-filter: blur(8px);
+  transition: transform 0.12s ease;
 }
 
 .control-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
 /* SHUTTER BUTTON */
 .shutter-btn {
-  width: 76px;
-  height: 76px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   background: transparent;
-  border: 4px solid #ffffff;
+  border: 3.5px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.45);
   transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -578,11 +624,11 @@ onBeforeUnmount(() => {
 }
 
 .shutter-inner {
-  width: 60px;
-  height: 60px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: #ffffff;
-  transition: all 0.12s;
+  transition: all 0.12s ease;
 }
 
 .shutter-btn:active .shutter-inner {
@@ -590,35 +636,40 @@ onBeforeUnmount(() => {
   background: #22c55e;
 }
 
-/* =================================================================== */
-/* CAPTION VIEW STYLES                                                 */
-/* =================================================================== */
+/* ================= CAPTION SHEET ================= */
 .caption-container {
   width: 100%;
   max-width: 480px;
   height: 100%;
   display: flex;
   align-items: flex-end;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(6px);
 }
 
 .caption-sheet {
   width: 100%;
   background: #ffffff;
-  border-radius: 24px 24px 0 0;
-  padding: 16px 18px calc(18px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
-  animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 20px 20px 0 0;
+  padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.28);
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   max-height: 94vh;
   overflow-y: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .caption-sheet {
+    background: #0f172a;
+    color: #f8fafc;
+  }
 }
 
 .caption-sheet::before {
   content: '';
   display: block;
-  width: 36px;
-  height: 4px;
+  width: 32px;
+  height: 3.5px;
   background: #cbd5e1;
   border-radius: 2px;
   margin: 0 auto 10px;
@@ -628,20 +679,32 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid #f1f5f9;
 }
 
+@media (prefers-color-scheme: dark) {
+  .sheet-top-row {
+    border-bottom-color: #1e293b;
+  }
+}
+
 .sheet-heading {
-  display: block;
-  font-weight: 800;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sheet-heading {
+    color: #f1f5f9;
+  }
 }
 
 .sheet-subheading {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: #64748b;
   margin-top: 1px;
 }
@@ -649,46 +712,54 @@ onBeforeUnmount(() => {
 .btn-sheet-close {
   background: transparent;
   border: none;
-  font-size: 1.2rem;
   color: #94a3b8;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .preview-box {
   position: relative;
-  margin: 12px 0;
-  border-radius: 14px;
+  margin: 10px 0;
+  border-radius: 12px;
   overflow: hidden;
-  background: #0f172a;
+  background: #090d16;
   border: 1px solid #e2e8f0;
-  max-height: 220px;
+  max-height: 200px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .preview-box {
+    border-color: #334155;
+  }
 }
 
 .preview-img {
   width: 100%;
-  max-height: 220px;
+  max-height: 200px;
   object-fit: cover;
   display: block;
 }
 
 .btn-retake-floating {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(15, 23, 42, 0.75);
+  top: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.78);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(4px);
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.7rem;
+  font-weight: 600;
   cursor: pointer;
-}
-
-.btn-retake-floating:active {
-  transform: scale(0.95);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .cat-picker-box {
@@ -696,18 +767,19 @@ onBeforeUnmount(() => {
 }
 
 .cat-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: #64748b;
   margin-bottom: 5px;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .cat-scroll {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
   scrollbar-width: none;
 }
 .cat-scroll::-webkit-scrollbar {
@@ -718,49 +790,75 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 5px 10px;
+  padding: 4px 9px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
-  border-radius: 20px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  border-radius: 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: #475569;
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.12s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cat-chip {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
 }
 
 .cat-chip.active {
   background: #dcfce7;
   border-color: #86efac;
-  color: #166534;
+  color: #15803d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cat-chip.active {
+    background: #064e3b;
+    border-color: #059669;
+    color: #6ee7b7;
+  }
 }
 
 .caption-input-box {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .caption-textarea {
   width: 100%;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  line-height: 1.45;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  line-height: 1.4;
   color: #0f172a;
   resize: none;
   font-family: inherit;
   box-sizing: border-box;
+  background: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .caption-textarea {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
 }
 
 .caption-textarea:focus {
   outline: none;
   border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
 }
 
 .suggestion-scroll {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
   margin-top: 6px;
   padding-bottom: 2px;
@@ -774,30 +872,51 @@ onBeforeUnmount(() => {
   display: inline-block;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 3px 8px;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: #475569;
   cursor: pointer;
   white-space: nowrap;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sug-chip {
+    background: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+  }
 }
 
 .mamasar-box {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
   border-radius: 8px;
-  padding: 8px 10px;
-  margin-bottom: 12px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mamasar-box {
+    background: #064e3b/30;
+    border-color: #065f46;
+  }
 }
 
 .mamasar-label {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.74rem;
+  font-weight: 600;
   color: #166534;
   cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mamasar-label {
+    color: #86efac;
+  }
 }
 
 .sheet-actions {
@@ -805,19 +924,41 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.btn-half {
+.btn-sheet-cancel {
   flex: 1;
-  padding: 10px;
-  font-size: 0.82rem;
+  padding: 9px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
 }
 
-.btn-submit-full {
+@media (prefers-color-scheme: dark) {
+  .btn-sheet-cancel {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
+}
+
+.btn-sheet-submit {
   flex: 2;
-  padding: 10px;
-  font-size: 0.84rem;
-  font-weight: 800;
+  padding: 9px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 10px;
   background: #16a34a;
-  border-color: #16a34a;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
 }
 
 @keyframes slideUp {
