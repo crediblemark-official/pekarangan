@@ -14,6 +14,7 @@ import RecordHub from './components/RecordHub.vue';
 import ProfileView from './components/ProfileView.vue';
 import OnboardingSetup from './components/OnboardingSetup.vue';
 import InAppCameraModal from './components/InAppCameraModal.vue';
+import InstallPromptModal from './components/InstallPromptModal.vue';
 import AppIcon from './components/AppIcon.vue';
 import { SecurityService } from './services/security';
 
@@ -59,6 +60,7 @@ const isCameraLoading = ref(false);
 // Modals & In-App Camera State
 const showQueueModal = ref(false);
 const showInAppCamera = ref(false);
+const showInstallModal = ref(false);
 const communityRefreshKey = ref(0);
 
 const onPostCreated = () => {
@@ -328,6 +330,13 @@ const removeQueueItem = (queueId: string) => {
 onMounted(() => {
   refreshQueue();
 
+  // Deteksi rujukan instalasi PWA langsung dari landing page Mamasar (?install=1)
+  const searchParams = new URLSearchParams(window.location.search);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+  if ((searchParams.get('install') === '1' || window.location.hash.includes('install')) && !isStandalone) {
+    showInstallModal.value = true;
+  }
+
   // Cloud sync from Google Sheets database
   if (isOnline.value) {
     if (StorageService.getSyncQueue().length > 0) {
@@ -595,6 +604,13 @@ onMounted(() => {
       @sync-single="syncSingleItem"
       @sync-all="syncAllQueue"
       @remove-item="removeQueueItem"
+    />
+
+    <!-- Auto-Install Prompt Modal for Direct PWA Installation -->
+    <InstallPromptModal 
+      v-if="showInstallModal"
+      @close="showInstallModal = false"
+      @installed="showInstallModal = false; showToast('Aplikasi Pekarangan berhasil dipasang!', 'success')"
     />
 
     <!-- Toast Notification -->
