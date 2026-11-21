@@ -109,6 +109,8 @@ export interface SurveyPayload {
 
 export interface AppSettings {
   gasUrl: string;
+  tursoUrl?: string;
+  tursoAuthToken?: string;
   mwcZone?: string;
   ranting?: string;
   defaultRtRw: string;

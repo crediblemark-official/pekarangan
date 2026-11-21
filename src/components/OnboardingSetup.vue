@@ -2,6 +2,7 @@
 import { ref, reactive, computed, watch } from 'vue';
 import { StorageService } from '../services/storage';
 import { ApiService, getEffectiveGasUrl } from '../services/api';
+import { isTursoConfigured } from '../services/turso';
 import { SecurityService } from '../services/security';
 import type { AppSettings, CommunityMemberItem } from '../types';
 import { MWC_ZONES } from '../data/zones';
@@ -53,7 +54,7 @@ const checkExistingAccount = async () => {
   if (digits.length < 9) return;
 
   const gasUrl = getEffectiveGasUrl();
-  if (!gasUrl || !navigator.onLine) return;
+  if ((!gasUrl && !isTursoConfigured()) || !navigator.onLine) return;
 
   isCheckingAccount.value = true;
 
@@ -139,7 +140,7 @@ const submitIdentity = async () => {
   };
 
   const gasUrl = getEffectiveGasUrl();
-  if (gasUrl && navigator.onLine) {
+  if ((gasUrl || isTursoConfigured()) && navigator.onLine) {
     try {
       const res = await ApiService.registerAccount(gasUrl, accountPayload);
       if (res.member_id) {

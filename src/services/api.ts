@@ -5,6 +5,7 @@
  */
 
 import type { SurveyPayload, PlantItem, LivestockItem, MemberData, AssetItem } from "../types";
+import { TursoService, isTursoConfigured } from "./turso";
 
 export interface ApiResponse {
   status: "success" | "error";
@@ -71,13 +72,23 @@ export const ApiService = {
   },
 
   /**
-   * Mengambil seluruh data dari Google Spreadsheet via GAS
+   * Mengambil seluruh data dari database cloud (Turso SQLite atau Google Spreadsheet via GAS)
    */
-  async fetchAllData(gasUrl: string): Promise<any | null> {
-    if (!gasUrl || !gasUrl.startsWith("http")) return null;
+  async fetchAllData(gasUrl?: string): Promise<any | null> {
+    if (isTursoConfigured()) {
+      try {
+        const tursoData = await TursoService.fetchAllData();
+        if (tursoData) return tursoData;
+      } catch (e) {
+        console.warn("Turso fetch failed, mencoba fallback ke GAS jika tersedia:", e);
+      }
+    }
+
+    const effectiveGas = (gasUrl || getEffectiveGasUrl()).trim();
+    if (!effectiveGas || !effectiveGas.startsWith("http")) return null;
 
     try {
-      const url = new URL(gasUrl);
+      const url = new URL(effectiveGas);
       url.searchParams.set("action", "get_all");
 
       const response = await fetch(url.toString(), {
@@ -132,14 +143,29 @@ export const ApiService = {
   async registerAccount(
     gasUrl: string,
     account: {
+      member_id?: string;
       nama_lengkap: string;
+      nama_panggilan?: string;
       nomor_wa: string;
+      mwc_zone?: string;
+      ranting?: string;
       rt_rw?: string;
       alamat_catatan?: string;
       device_id: string;
       force_takeover?: boolean;
     }
   ): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      const res = await TursoService.registerAccount(account);
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "register_account", account }).catch(() => {});
+      }
+      return {
+        status: "success",
+        message: "Akun berhasil didaftarkan di Turso SQLite",
+        member_id: res.member_id
+      };
+    }
     return this.postToGas(gasUrl, {
       action: "register_account",
       account
@@ -153,6 +179,16 @@ export const ApiService = {
     gasUrl: string,
     identifier: { phone?: string; device_id?: string }
   ): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      const res = await TursoService.lookupAccount(identifier.phone || '', identifier.device_id);
+      return {
+        status: res.found ? "success" : "error",
+        message: res.found ? "Akun ditemukan di Turso" : "Akun tidak ditemukan di Turso",
+        found: res.found,
+        member: res.member,
+        isOtherDeviceActive: res.isOtherDeviceActive
+      };
+    }
     return this.postToGas(gasUrl, {
       action: "lookup_account",
       ...identifier
@@ -160,16 +196,35 @@ export const ApiService = {
   },
 
   /**
-   * Mengirim seluruh data survei ke Google Apps Script Web App
+   * Mengirim seluruh data survei ke Database (Turso atau GAS)
    */
   async submitSurvey(gasUrl: string, payload: SurveyPayload): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      const res = await TursoService.submitSurvey(payload);
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, payload).catch(() => {});
+      }
+      return {
+        status: "success",
+        message: "Survei pekarangan berhasil disimpan ke Turso SQLite!",
+        member_id: res.member_id,
+        yard_id: res.yard_id
+      };
+    }
     return this.postToGas(gasUrl, payload);
   },
 
   /**
-   * Simpan tanaman baru ke sheet
+   * Simpan tanaman baru
    */
   async savePlant(gasUrl: string, plant: PlantItem): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      await TursoService.savePlant(plant);
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "save_plant", plant }).catch(() => {});
+      }
+      return { status: "success", message: "Tanaman tersimpan di Turso" };
+    }
     return this.postToGas(gasUrl, {
       action: "save_plant",
       plant
@@ -180,6 +235,13 @@ export const ApiService = {
    * Update fase pertumbuhan tanaman
    */
   async updatePlantPhase(gasUrl: string, plantId: string, phase: string, progressPercent: number): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      await TursoService.updatePlantPhase(plantId, phase, progressPercent);
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "update_plant_phase", plantId, phase, progressPercent }).catch(() => {});
+      }
+      return { status: "success", message: "Fase tanaman diperbarui di Turso" };
+    }
     return this.postToGas(gasUrl, {
       action: "update_plant_phase",
       plantId,
@@ -192,6 +254,13 @@ export const ApiService = {
    * Simpan ternak baru
    */
   async saveLivestock(gasUrl: string, livestock: LivestockItem): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      await TursoService.saveLivestock(livestock);
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "save_livestock", livestock }).catch(() => {});
+      }
+      return { status: "success", message: "Ternak tersimpan di Turso" };
+    }
     return this.postToGas(gasUrl, {
       action: "save_livestock",
       livestock
@@ -202,6 +271,13 @@ export const ApiService = {
    * Catat telur harian
    */
   async logEgg(gasUrl: string, livestockId: string, count: number, note?: string): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      await TursoService.logEgg(livestockId, count, note);
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "log_egg", livestockId, count, note }).catch(() => {});
+      }
+      return { status: "success", message: "Log telur tersimpan di Turso" };
+    }
     return this.postToGas(gasUrl, {
       action: "log_egg",
       livestockId,
@@ -214,6 +290,23 @@ export const ApiService = {
    * Catat panen
    */
   async logHarvest(gasUrl: string, harvest: { plantId: string; plantName: string; qty: string; allocation: string; note?: string }): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      await TursoService.logHarvest({
+        id: `HRV-${Date.now()}`,
+        plantId: harvest.plantId,
+        plantName: harvest.plantName,
+        qty: harvest.qty,
+        unit: 'Satuan',
+        estimatedValue: 0,
+        allocation: harvest.allocation as any,
+        date: new Date().toISOString().slice(0, 10),
+        note: harvest.note || ''
+      });
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "log_harvest", harvest }).catch(() => {});
+      }
+      return { status: "success", message: "Panen tersimpan di Turso" };
+    }
     return this.postToGas(gasUrl, {
       action: "log_harvest",
       harvest
@@ -224,6 +317,22 @@ export const ApiService = {
    * Catat konsumsi mandiri / buku kas
    */
   async logConsume(gasUrl: string, consume: { item: string; meal: string; note: string; savedValue: number; qty?: number; pricePerUnit?: number }): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      await TursoService.logConsume({
+        id: `KAS-${Date.now()}`,
+        item: consume.item,
+        meal: consume.meal,
+        note: consume.note,
+        date: new Date().toISOString().slice(0, 10),
+        savedValue: consume.savedValue,
+        qty: consume.qty,
+        pricePerUnit: consume.pricePerUnit
+      });
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "log_consume", consume }).catch(() => {});
+      }
+      return { status: "success", message: "Konsumsi tersimpan di Turso" };
+    }
     return this.postToGas(gasUrl, {
       action: "log_consume",
       consume
@@ -234,6 +343,13 @@ export const ApiService = {
    * Simpan pilihan dropdown baru ke database master
    */
   async addCustomOption(gasUrl: string, category: string, value: string, extra?: any): Promise<ApiResponse> {
+    if (isTursoConfigured()) {
+      await TursoService.addCustomOption(category, value, extra);
+      if (gasUrl && gasUrl.startsWith("http")) {
+        this.postToGas(gasUrl, { action: "add_option", category, value, extra }).catch(() => {});
+      }
+      return { status: "success", message: "Opsi tersimpan di Turso" };
+    }
     return this.postToGas(gasUrl, {
       action: "add_option",
       category,

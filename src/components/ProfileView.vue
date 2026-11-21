@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { StorageService } from '../services/storage';
 import { ApiService, getEffectiveGasUrl } from '../services/api';
+import { TursoService, isTursoConfigured } from '../services/turso';
 import { SecurityService } from '../services/security';
 import type { AppSettings } from '../types';
 import { MWC_ZONES } from '../data/zones';
@@ -40,6 +41,63 @@ const livestockCount = ref(StorageService.getLivestocks().length);
 const totalSavings = ref(StorageService.getTotalSavings());
 const queueCount = ref(StorageService.getSyncQueue().length);
 
+// Turso Cloud State
+const isTestingTurso = ref(false);
+const isInitSchema = ref(false);
+const tursoPingResult = ref<{ success: boolean; latencyMs: number; message: string } | null>(null);
+
+const testTursoConnection = async () => {
+  if (!settings.tursoUrl?.trim()) {
+    emit('showToast', 'Harap isi URL Database Turso.', 'warning');
+    return;
+  }
+  isTestingTurso.value = true;
+  tursoPingResult.value = null;
+  try {
+    const res = await TursoService.ping({
+      url: settings.tursoUrl.trim(),
+      authToken: (settings.tursoAuthToken || '').trim()
+    });
+    tursoPingResult.value = res;
+    if (res.success) {
+      StorageService.saveSettings({ ...settings });
+      emit('showToast', `Koneksi Turso Sukses! (${res.latencyMs} ms) 🚀`, 'success');
+    } else {
+      emit('showToast', res.message, 'error');
+    }
+  } catch (err: any) {
+    emit('showToast', 'Gagal tes koneksi: ' + err.message, 'error');
+  } finally {
+    isTestingTurso.value = false;
+  }
+};
+
+const initializeTursoSchema = async () => {
+  if (!settings.tursoUrl?.trim()) {
+    emit('showToast', 'Harap isi URL Database Turso.', 'warning');
+    return;
+  }
+  StorageService.saveSettings({ ...settings });
+  isInitSchema.value = true;
+  try {
+    const ok = await TursoService.initSchema();
+    if (ok) {
+      emit('showToast', 'Seluruh tabel Turso berhasil dibuat/disiapkan! 🎉', 'success');
+    } else {
+      emit('showToast', 'Gagal inisialisasi tabel di Turso.', 'error');
+    }
+  } catch (err: any) {
+    emit('showToast', 'Error inisialisasi: ' + err.message, 'error');
+  } finally {
+    isInitSchema.value = false;
+  }
+};
+
+const saveTursoSettings = () => {
+  StorageService.saveSettings({ ...settings });
+  emit('showToast', 'Pengaturan Database Turso berhasil disimpan!', 'success');
+};
+
 onMounted(() => {
   // Pastikan form selalu sinkron dengan data profil terbaru saat halaman dibuka
   const freshSettings = StorageService.getSettings();
@@ -67,7 +125,7 @@ const saveProfile = () => {
     StorageService.saveMembers(members);
   }
 
-  // Kirim data profil pemilik akun & device binding ke Google Apps Script / Google Sheets
+  // Kirim data profil pemilik akun & device binding ke Database Cloud (Turso / GAS)
   if (settings.ownerName && settings.ownerName.trim()) {
     const accountPayload = {
       member_id: memberId,
@@ -80,14 +138,14 @@ const saveProfile = () => {
     };
 
     const gasUrl = getEffectiveGasUrl();
-    if (gasUrl && navigator.onLine) {
+    if ((gasUrl || isTursoConfigured()) && navigator.onLine) {
       ApiService.registerAccount(gasUrl, accountPayload).then((res) => {
         if (res.member_id && ownerIdx !== -1) {
           members[ownerIdx].id = res.member_id;
           StorageService.saveMembers(members);
         }
       }).catch((err) => {
-        console.warn('Gagal sync profile langsung ke GAS:', err);
+        console.warn('Gagal sync profile langsung ke cloud:', err);
         StorageService.addToSyncQueue(
           { action: 'register_account', account: accountPayload },
           'register_account',
@@ -115,14 +173,15 @@ const syncCloudData = async () => {
     return;
   }
   const gasUrl = getEffectiveGasUrl();
-  if (!gasUrl) {
-    emit('showToast', 'URL Google Apps Script belum dikonfigurasi di environment.', 'warning');
+  const usingTurso = isTursoConfigured();
+  if (!gasUrl && !usingTurso) {
+    emit('showToast', 'Database belum dikonfigurasi (atur Turso URL di bawah).', 'warning');
     return;
   }
 
   isSyncingData.value = true;
   try {
-    // 1. Jika pengguna memiliki profil lokal yang belum ada di cloud, tautkan ke Google Sheets!
+    // 1. Jika pengguna memiliki profil lokal yang belum ada di cloud, tautkan ke database
     if (settings.ownerName && settings.ownerName.trim()) {
       const accountPayload = {
         member_id: 'MBR-' + Date.now().toString().slice(-6),
@@ -136,11 +195,12 @@ const syncCloudData = async () => {
       await ApiService.registerAccount(gasUrl, accountPayload).catch(() => {});
     }
 
-    // 2. Tarik seluruh data terbaru dari Google Sheets
+    // 2. Tarik seluruh data terbaru dari Cloud (Turso / GAS)
     const cloudData = await ApiService.fetchAllData(gasUrl);
     if (cloudData) {
       if (cloudData.members && cloudData.members.length > 0) {
         StorageService.setRecordedMembersCount(cloudData.members.length);
+        StorageService.saveMembers(cloudData.members);
       }
       if (cloudData.plants && cloudData.plants.length > 0) {
         StorageService.savePlants(cloudData.plants);
@@ -159,7 +219,8 @@ const syncCloudData = async () => {
     totalSavings.value = StorageService.getTotalSavings();
     queueCount.value = StorageService.getSyncQueue().length;
 
-    emit('showToast', 'Sinkronisasi berhasil! Data terhubung dengan Google Sheets.', 'success');
+    const dbName = usingTurso ? 'Turso SQLite' : 'Google Sheets';
+    emit('showToast', `Sinkronisasi berhasil! Data terhubung dengan ${dbName}.`, 'success');
   } catch (err: any) {
     emit('showToast', 'Gagal sinkronisasi: ' + err.message, 'error');
   } finally {
@@ -425,7 +486,92 @@ const clearAppCache = async () => {
       </div>
     </div>
 
+    <!-- Cloud Database Configuration (Turso SQLite Serverless) -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚡ Database Cloud (Turso SQLite)</span>
+        <span 
+          :style="{
+            fontSize: '0.65rem',
+            padding: '2px 7px',
+            borderRadius: '4px',
+            fontWeight: '800',
+            background: isTursoConfigured() ? '#dcfce7' : '#f1f5f9',
+            color: isTursoConfigured() ? '#166534' : '#475569',
+            border: isTursoConfigured() ? '1px solid #86efac' : '1px solid #cbd5e1'
+          }"
+        >
+          {{ isTursoConfigured() ? 'Aktif' : 'Belum Dikonfigurasi' }}
+        </span>
+      </div>
 
+      <div style="font-size: 0.72rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.4;">
+        SQLite serverless libSQL dengan latensi ultra rendah (&lt;50ms), gratis 5GB, tanpa batas cold-start Google Sheets.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Database URL Turso</label>
+        <input 
+          v-model="settings.tursoUrl" 
+          type="text" 
+          class="form-control" 
+          placeholder="https://pekarangan-xxxx.turso.io"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Auth Token Turso</label>
+        <input 
+          v-model="settings.tursoAuthToken" 
+          type="password" 
+          class="form-control" 
+          placeholder="eyJhbGciOiJFZERT..."
+        />
+      </div>
+
+      <div v-if="tursoPingResult" :style="{
+        padding: '6px 10px',
+        borderRadius: '6px',
+        marginBottom: '10px',
+        fontSize: '0.72rem',
+        fontWeight: '600',
+        background: tursoPingResult.success ? '#f0fdf4' : '#fef2f2',
+        color: tursoPingResult.success ? '#15803d' : '#b91c1c',
+        border: tursoPingResult.success ? '1px solid #86efac' : '1px solid #fca5a5'
+      }">
+        {{ tursoPingResult.message }}
+      </div>
+
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button 
+          type="button" 
+          class="btn-sync-action" 
+          :disabled="isTestingTurso"
+          @click="testTursoConnection"
+        >
+          <span v-if="isTestingTurso" class="spinner-green"></span>
+          <span>{{ isTestingTurso ? 'Mengetes...' : '⚡ Tes Latensi' }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="btn-queue-action" 
+          :disabled="isInitSchema"
+          @click="initializeTursoSchema"
+        >
+          <span>{{ isInitSchema ? 'Membuat...' : '🛠️ Buat Tabel' }}</span>
+        </button>
+
+        <button 
+          type="button" 
+          class="btn-sm btn-primary" 
+          style="margin-left: auto; padding: 5px 12px; font-size: 0.75rem;"
+          @click="saveTursoSettings"
+        >
+          💾 Simpan
+        </button>
+      </div>
+    </div>
 
     <!-- Data Management & Sync -->
     <div class="card">
@@ -437,7 +583,9 @@ const clearAppCache = async () => {
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
         <div>
           <div style="font-weight: 700; font-size: 0.82rem;">Sinkronisasi Data</div>
-          <div style="font-size: 0.68rem; color: var(--text-dim);">Tarik data terbaru dari Google Sheets</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim);">
+            {{ isTursoConfigured() ? 'Tarik data terbaru dari Turso SQLite' : 'Tarik data terbaru dari Google Sheets' }}
+          </div>
         </div>
         <button 
           type="button" 

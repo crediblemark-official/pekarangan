@@ -113,6 +113,8 @@ export const StorageService = {
 
         return {
           gasUrl: getEffectiveGasUrl(),
+          tursoUrl: parsed.tursoUrl || (import.meta.env.VITE_TURSO_DATABASE_URL as string) || '',
+          tursoAuthToken: parsed.tursoAuthToken || (import.meta.env.VITE_TURSO_AUTH_TOKEN as string) || '',
           mwcZone: parsed.mwcZone || 'MWC Kota Sumenep',
           ranting: parsed.ranting || '',
           defaultRtRw: rt,
@@ -132,6 +134,8 @@ export const StorageService = {
     }
     return {
       gasUrl: getEffectiveGasUrl(),
+      tursoUrl: (import.meta.env.VITE_TURSO_DATABASE_URL as string) || '',
+      tursoAuthToken: (import.meta.env.VITE_TURSO_AUTH_TOKEN as string) || '',
       mwcZone: 'MWC Kota Sumenep',
       ranting: '',
       defaultRtRw: '',
