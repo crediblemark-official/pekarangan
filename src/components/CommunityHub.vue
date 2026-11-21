@@ -438,7 +438,7 @@ onMounted(() => {
             <span class="font-mono">#{{ myFamilyRank.rank }}</span>
           </div>
           <div class="my-rank-points font-mono">
-            {{ myFamilyRank.totalPoints }} Pts
+            {{ myFamilyRank.totalPoints }} Poin
           </div>
         </div>
         <div class="my-rank-desc">
@@ -459,21 +459,21 @@ onMounted(() => {
           <div class="podium-card silver">
             <AppIcon name="medal" size="md" class="text-slate-400 mx-auto mb-1" />
             <div class="podium-name">{{ familyLeaderboard[1].familyName }}</div>
-            <div class="podium-pts font-mono">{{ familyLeaderboard[1].totalPoints }} Pts</div>
+            <div class="podium-pts font-mono">{{ familyLeaderboard[1].totalPoints }} Poin</div>
             <div class="podium-badge">{{ familyLeaderboard[1].ranting }}</div>
           </div>
           <!-- Juara 1 (Gold) -->
           <div class="podium-card gold">
             <AppIcon name="crown" size="lg" class="text-amber-500 mx-auto mb-1" />
             <div class="podium-name">{{ familyLeaderboard[0].familyName }}</div>
-            <div class="podium-pts font-mono">{{ familyLeaderboard[0].totalPoints }} Pts</div>
+            <div class="podium-pts font-mono">{{ familyLeaderboard[0].totalPoints }} Poin</div>
             <div class="podium-badge-gold">Juara 1</div>
           </div>
           <!-- Juara 3 (Bronze) -->
           <div class="podium-card bronze">
             <AppIcon name="medal" size="md" class="text-amber-700 mx-auto mb-1" />
             <div class="podium-name">{{ familyLeaderboard[2].familyName }}</div>
-            <div class="podium-pts font-mono">{{ familyLeaderboard[2].totalPoints }} Pts</div>
+            <div class="podium-pts font-mono">{{ familyLeaderboard[2].totalPoints }} Poin</div>
             <div class="podium-badge">{{ familyLeaderboard[2].ranting }}</div>
           </div>
         </div>
