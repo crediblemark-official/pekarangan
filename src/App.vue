@@ -13,7 +13,7 @@ import CommunityHub from './components/CommunityHub.vue';
 import RecordHub from './components/RecordHub.vue';
 import ProfileView from './components/ProfileView.vue';
 import OnboardingSetup from './components/OnboardingSetup.vue';
-import CreatePostModal from './components/CreatePostModal.vue';
+import PostCaptureModal from './components/PostCaptureModal.vue';
 import { SecurityService } from './services/security';
 
 // Survey Step Components (Fase 1)
@@ -55,13 +55,27 @@ const isSubmitting = ref(false);
 const isGeoLoading = ref(false);
 const isCameraLoading = ref(false);
 
-// Modals State
+// Modals & Camera State
 const showQueueModal = ref(false);
-const showCreatePostModal = ref(false);
+const bottomNavRef = ref<InstanceType<typeof AppBottomNav> | null>(null);
+const capturedPhoto = ref<string>('');
+const showPostCaptureModal = ref(false);
 const communityRefreshKey = ref(0);
 
+const onPhotoCaptured = (dataUrl: string) => {
+  capturedPhoto.value = dataUrl;
+  showPostCaptureModal.value = true;
+};
+
+const onRetakePhoto = () => {
+  showPostCaptureModal.value = false;
+  setTimeout(() => {
+    bottomNavRef.value?.triggerCamera();
+  }, 150);
+};
+
 const onPostCreated = () => {
-  showCreatePostModal.value = false;
+  showPostCaptureModal.value = false;
   communityRefreshKey.value++;
   activeNavTab.value = 'community';
 };
@@ -533,7 +547,7 @@ onMounted(() => {
         :key="'comm-' + communityRefreshKey"
         @show-toast="showToast"
         @go-to-profile="activeNavTab = 'profile'"
-        @open-create-post="showCreatePostModal = true"
+        @open-create-post="bottomNavRef?.triggerCamera()"
       />
 
       <!-- 2. CATAT (PUSAT PENCATATAN PEKARANGAN) -->
@@ -592,8 +606,9 @@ onMounted(() => {
       @done="onOnboardingDone" 
     />
 
-    <!-- Fixed Bottom Navigation Bar (Tombol tengah bergaya TikTok / Lanjut-Simpan saat survei) -->
+    <!-- Fixed Bottom Navigation Bar (Tombol tengah kamera melayang / Lanjut-Simpan saat survei) -->
     <AppBottomNav 
+      ref="bottomNavRef"
       :active-tab="activeNavTab === 'survey' ? 'record' : activeNavTab"
       :survey-queue-count="syncQueue.length"
       :is-survey-mode="activeNavTab === 'survey'"
@@ -602,13 +617,16 @@ onMounted(() => {
       @change-tab="(tab) => activeNavTab = tab"
       @next-step="nextStep"
       @submit-survey="submitForm"
-      @open-create-post="showCreatePostModal = true"
+      @photo-captured="onPhotoCaptured"
+      @camera-error="(msg) => showToast(msg, 'error')"
     />
 
-    <!-- Modal TikTok Center Action: Kabarkan Pekarangan -->
-    <CreatePostModal 
-      :show="showCreatePostModal"
-      @close="showCreatePostModal = false"
+    <!-- Modal Jepret & Beri Caption -->
+    <PostCaptureModal 
+      :show="showPostCaptureModal"
+      :photo-url="capturedPhoto"
+      @close="showPostCaptureModal = false"
+      @retake="onRetakePhoto"
       @post-created="onPostCreated"
       @show-toast="showToast"
     />

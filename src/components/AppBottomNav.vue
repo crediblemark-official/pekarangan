@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { CameraService } from '../services/camera';
+
 export type AppNavTab = 'home' | 'record' | 'community' | 'profile';
 
 const props = defineProps<{
@@ -13,8 +16,33 @@ const emit = defineEmits<{
   (e: 'changeTab', tab: AppNavTab): void;
   (e: 'nextStep'): void;
   (e: 'submitSurvey'): void;
-  (e: 'openCreatePost'): void;
+  (e: 'photoCaptured', dataUrl: string): void;
+  (e: 'cameraError', message: string): void;
 }>();
+
+const cameraInputRef = ref<HTMLInputElement | null>(null);
+
+const triggerCamera = () => {
+  if (cameraInputRef.value) {
+    cameraInputRef.value.click();
+  }
+};
+
+const handleFileChange = async (e: Event) => {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  try {
+    const res = await CameraService.compressImage(file, 960, 720, 0.65);
+    emit('photoCaptured', res.dataUrl);
+  } catch (err: any) {
+    emit('cameraError', err.message || 'Gagal memproses foto dari kamera.');
+  } finally {
+    if (cameraInputRef.value) {
+      cameraInputRef.value.value = '';
+    }
+  }
+};
 
 const handleSurveyClick = () => {
   if (props.currentStep === 4) {
@@ -23,6 +51,10 @@ const handleSurveyClick = () => {
     emit('nextStep');
   }
 };
+
+defineExpose({
+  triggerCamera
+});
 </script>
 
 <template>
@@ -55,8 +87,9 @@ const handleSurveyClick = () => {
       </span>
     </button>
 
-    <!-- 3. TOMBOL TENGAH TIKTOK STYLE (+) / SURVEY ACTION -->
-    <div class="tiktok-center-container">
+    <!-- 3. TOMBOL TENGAH JEPRET KAMERA / SURVEY ACTION -->
+    <div class="center-camera-wrapper">
+      <!-- Tombol saat mode survei (Fase 1) -->
       <button 
         v-if="isSurveyMode"
         type="button"
@@ -70,19 +103,30 @@ const handleSurveyClick = () => {
         <span class="survey-center-label">{{ currentStep === 4 ? 'Simpan' : 'Lanjut' }}</span>
       </button>
 
+      <!-- Tombol Jepret Kamera Utama -->
       <button 
         v-else
         type="button" 
-        class="tiktok-create-btn"
-        @click="$emit('openCreatePost')"
-        title="Kabarkan Pekarangan (Ngeksis Berfaedah)"
+        class="camera-center-btn"
+        @click="triggerCamera"
+        title="Jepret Foto Pekarangan Langsung"
       >
-        <span class="tiktok-flank-cyan"></span>
-        <span class="tiktok-center-box">
-          <span class="tiktok-plus">+</span>
-        </span>
-        <span class="tiktok-flank-green"></span>
+        <svg class="camera-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        <span class="camera-plus-badge">+</span>
       </button>
+
+      <!-- Input file kamera tersembunyi yang langsung memicu kamera perangkat -->
+      <input 
+        ref="cameraInputRef"
+        type="file" 
+        accept="image/*" 
+        capture="environment" 
+        style="display: none;" 
+        @change="handleFileChange" 
+      />
     </div>
 
     <!-- 4. Community / Komunitas Warga -->
@@ -110,73 +154,61 @@ const handleSurveyClick = () => {
 </template>
 
 <style scoped>
-.tiktok-center-container {
+.center-camera-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  flex: 0 0 54px;
+  flex: 0 0 62px;
   height: 100%;
 }
 
-.tiktok-create-btn {
+.camera-center-btn {
   position: relative;
-  width: 44px;
-  height: 30px;
-  background: transparent;
-  border: none;
-  padding: 0;
+  top: -14px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 60%, #15803d 100%);
+  border: 3.5px solid #ffffff;
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.12s ease;
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.42);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
   user-select: none;
+  padding: 0;
 }
 
-.tiktok-create-btn:active {
-  transform: scale(0.9);
+.camera-center-btn:active {
+  transform: translateY(2px) scale(0.92);
+  box-shadow: 0 2px 10px rgba(22, 163, 74, 0.3);
 }
 
-.tiktok-flank-cyan {
+.camera-icon-svg {
+  width: 25px;
+  height: 25px;
+  stroke: #ffffff;
+}
+
+.camera-plus-badge {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 38px;
-  height: 30px;
-  background: #25f4ee;
-  border-radius: 8px;
-}
-
-.tiktok-flank-green {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 38px;
-  height: 30px;
-  background: #22c55e;
-  border-radius: 8px;
-}
-
-.tiktok-center-box {
-  position: relative;
-  z-index: 2;
-  width: 38px;
-  height: 30px;
-  background: #0f172a;
-  border-radius: 8px;
+  bottom: 5px;
+  right: 5px;
+  background: #ffffff;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 900;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.tiktok-plus {
-  color: #ffffff;
-  font-size: 21px;
-  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   line-height: 1;
-  margin-top: -1px;
 }
 
 .survey-center-btn {
