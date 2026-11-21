@@ -181,6 +181,26 @@ const openWhatsApp = (phone: string, name: string) => {
   window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
 };
 
+const handleSapa = (post: CommunityPostItem) => {
+  const isSelf = post.authorPhone === settings.phone || (post.authorName === settings.ownerName && !post.authorPhone);
+  if (isSelf) {
+    const shareText = encodeURIComponent(
+      `*Kabar Pekarangan Mandiri Pangan*\n` +
+      `"${post.title || post.content}"\n` +
+      `Pekarangan: ${post.yardName || 'Pekarangan Saya'} (${post.ranting})\n` +
+      `Mari wujudkan ketahanan pangan keluarga bersama Nahdlatul Ulama!`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank');
+  } else {
+    const phone = post.authorPhone || '628123456789';
+    const cleanPhone = phone.replace(/^0/, '62').replace(/\D/g, '');
+    const text = encodeURIComponent(
+      `Halo ${post.authorName}, salam sesama penggiat pekarangan mandiri pangan! Senang melihat kabar pekarangan "${post.title || 'Pekarangan Anda'}".`
+    );
+    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+  }
+};
+
 const refresh = () => {
   posts.value = StorageService.getCommunityPosts();
   loadPostsFromTurso();
@@ -357,17 +377,16 @@ onMounted(() => {
                 @click="handleReaction(post, 'semangat')"
               >
                 <AppIcon name="flame" size="xs" />
-                <span class="react-label">Semangat</span>
+                <span class="react-label">Giat</span>
                 <span class="react-count font-mono">{{ post.reactions?.semangat || 0 }}</span>
               </button>
             </div>
 
             <button 
-              v-if="post.authorPhone && post.authorPhone !== settings.phone"
               type="button" 
               class="sapa-wa-btn active:scale-95 transition-transform"
-              @click="openWhatsApp(post.authorPhone, post.authorName)"
-              title="Kirim sapaan WhatsApp"
+              @click="handleSapa(post)"
+              :title="post.authorPhone === settings.phone ? 'Bagikan kabar pekarangan ke WhatsApp' : 'Kirim sapaan WhatsApp'"
             >
               <AppIcon name="chat" size="xs" />
               <span>Sapa</span>
@@ -1111,29 +1130,39 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px 12px 14px;
+  padding: 8px 10px 10px;
   border-top: none;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: nowrap !important;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .reaction-buttons-group {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: nowrap !important;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .react-btn {
+  flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 7px;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 3px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #475569;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.12s ease;
 }
 
@@ -1143,24 +1172,33 @@ onMounted(() => {
   color: #166534;
 }
 
-.react-count {
+.react-label {
   font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+.react-count {
+  font-size: 0.65rem;
+  font-weight: 700;
   opacity: 0.9;
 }
 
 .sapa-wa-btn {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  background: transparent;
+  justify-content: center;
+  gap: 3px;
+  background: #f0fdf4;
   border: 1px solid #bbf7d0;
   color: #16a34a;
   border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  padding: 5px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.12s ease;
 }
 
 /* LIGA PEKARANGAN STYLES */
