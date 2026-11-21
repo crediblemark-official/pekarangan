@@ -6,7 +6,7 @@ export const teaserFeatures: TeaserFeature[] = [
     title: 'Bursa Barter Tetangga',
     tagline: 'Tukar surplus panenmu dengan bumbu dapur tetangga tanpa keluar uang tunai.',
     icon: '🧺',
-    tag: 'Terkunci (Menunggu Kuota Data RT)',
+    tag: 'Menunggu Kuota Data RT',
     isLocked: true,
     currentCount: 12,
     targetCount: 30,
@@ -16,61 +16,61 @@ export const teaserFeatures: TeaserFeature[] = [
       'Sistem non-tunai berbasis gotong-royong untuk memotong ketergantungan belanja pasar.',
       'Pencocokan ketersediaan komoditas otomatis di area rukun tetangga terdekat.'
     ],
-    whyLocked: 'Kenapa belum dibuka? Agar barter berjalan lancar, kita perlu memetakan dulu siapa yang punya cabai, siapa yang punya telur, dan siapa yang punya kangkung. Pastikan Anda dan tetangga sebelah sudah mengisi Form Pendataan Pekarangan!',
-    shareMessage: 'Halo tetangga! Ayo kita data pekarangan rumah kita di aplikasi Pekarangan. Semakin cepat data 30 pekarangan terkumpul, fitur Bursa Barter Sayur & Telur antar-warga bisa segera dibuka! Isi formnya di sini: '
+    whyLocked: 'Agar barter berjalan lancar, kita perlu memetakan dulu siapa yang punya cabai, siapa yang punya telur, dan siapa yang punya kangkung di lingkungan Anda.',
+    shareMessage: 'Halo tetangga! Ayo kita data pekarangan rumah kita di aplikasi Pekarangan agar bursa barter sayur & telur antar-warga bisa segera dibuka: '
   },
   {
     id: 'tabungan_poin',
     title: 'Tabungan Poin Sirkular',
-    tagline: 'Ubah sisa dapur menjadi Poin untuk ditukar bibit dan pakan ayam.',
+    tagline: 'Ubah sisa dapur menjadi nutrisi kompos dan pakan ternak.',
     icon: '♻️',
-    tag: 'Segera Hadir',
+    tag: 'Sirkular Organik',
     isLocked: true,
     currentCount: 10,
     targetCount: 25,
     targetUnit: 'keluarga terdaftar',
     points: [
       'Pilah sampah organik dapur (wadah hijau) untuk disetor ke fasilitas komposter & biopori.',
-      'Dapatkan saldo Poin dari setiap kilogram sisa dapur yang Anda setorkan.',
-      'Tukarkan poin dengan pupuk kompos siap pakai, bibit tanaman, atau maggot pakan ternak.'
+      'Daur ulang sisa dapur menjadi pupuk organik cair (POC) dan kompos alami untuk tanaman.',
+      'Pemanfaatan sisa sayuran untuk pakan ayam dan budidaya maggot hemat biaya.'
     ],
-    whyLocked: 'Sistem pengolahan limbah komunal (komposter & biopori) sedang disiapkan oleh pengurus lingkungan. Simpan wadah hijau dan wadah bersihmu, poin akan mulai dihitung begitu fasilitas siap!',
-    shareMessage: 'Tetangga sekalian, sisa dapur kita nanti bisa ditukar bibit & pakan ayam lho! Yuk ikut pendataan pekarangan agar fasilitas komposter segera disiapkan di lingkungan kita: '
+    whyLocked: 'Sistem daur ulang limbah organik komunal sedang disiapkan oleh pengurus lingkungan.',
+    shareMessage: 'Tetangga sekalian, sisa dapur kita nanti bisa ditukar bibit & pupuk kompos lho! Yuk ikut pendataan pekarangan: '
   },
   {
-    id: 'katalog_produksi',
-    title: 'Katalog Rumah Produksi',
-    tagline: 'Etalase produk olahan rumah tangga anggota untuk pasar lokal dan oleh-oleh.',
-    icon: '🍯',
-    tag: 'Segera Hadir',
-    isLocked: true,
-    currentCount: 8,
+    id: 'pasar_mamasar',
+    title: 'Pemasaran Surplus RPP ke Mamasar',
+    tagline: 'Pasarkan produk olahan surplus pekaranganmu ke direktori UMKM Mamasar tanpa potongan komisi.',
+    icon: '🏪',
+    tag: 'Integrasi Hilir',
+    isLocked: false,
+    currentCount: 15,
     targetCount: 20,
-    targetUnit: 'produk terkurasi',
+    targetUnit: 'produk RPP terverifikasi',
     points: [
-      'Pabrik mini dapur: etalase sambal kemasan, keripik pisang/singkong, dan jamu herbal.',
-      'Jangkau pembeli langsung dari warga satu lingkungan hingga pasar oleh-oleh.',
-      'Dukungan standarisasi kemasan higienis, label bersama, dan promosi komunitas.'
+      'Hilirisasi Dapur (Pilar 4 RPP): mengolah surplus panen jadi sambal botol, keripik, jamu herbal, dan telur asin.',
+      'Terhubung langsung ke platform Mamasar (Direktori Digital UMKM Nahdliyin se-Kabupaten Sumenep).',
+      'Transaksi langsung 100% via WhatsApp warga tanpa potongan biaya admin/tengkulak.'
     ],
-    whyLocked: 'Kami sedang memetakan potensi olahan dapur warga di Fase 1 (Pilar 4: Rumah Produksi). Begitu terkumpul minimal 20 ragam olahan dapur, etalase pasar lokal akan dibuka secara serentak!',
-    shareMessage: 'Punya produk sambal kemasan, keripik, jamu, atau olahan dapur sendiri? Daftarkan di aplikasi Pekarangan agar bisa masuk Katalog Rumah Produksi: '
+    whyLocked: 'Pastikan data Rumah Produksi Pekarangan (RPP) Anda sudah terdata lengkap dengan estimasi kapasitas produksi surplus.',
+    shareMessage: 'Punya olahan dapur dari surplus kebun pekarangan? Ayo catat di aplikasi Pekarangan agar terhubung ke pasar digital Mamasar: '
   },
   {
     id: 'buku_kas',
-    title: 'Buku Kas & Sedekah',
-    tagline: 'Pantau berapa ratus ribu rupiah uang belanja yang berhasil dihemat pekaranganmu tiap bulan.',
+    title: 'Kalkulator Hemat Dapur & Sedekah',
+    tagline: 'Pantau berapa ratus ribu rupiah uang belanja yang berhasil dihemat pekarangan keluarga tiap bulan.',
     icon: '📊',
-    tag: 'Segera Hadir',
-    isLocked: true,
-    currentCount: 18,
+    tag: 'Aktif di Tab Insight',
+    isLocked: false,
+    currentCount: 25,
     targetCount: 30,
     targetUnit: 'pekarangan aktif',
     points: [
-      'Kalkulator otomatis menghitung nilai rupiah sayur & telur hasil pekarangan Anda.',
+      'Kalkulator otomatis menghitung nilai rupiah sayur & telur hasil pekarangan yang dimakan keluarga.',
       'Catatan rekor panen yang dinikmati keluarga atau disedekahkan ke tetangga sekitar.',
-      'Raih lencana reputasi sosial pekarangan lestari, mandiri, dan berdaya.'
+      'Bukan buku kas komersial, melainkan tolok ukur kemandirian pangan dan ketahanan dapur keluarga.'
     ],
-    whyLocked: 'Ingin tahu berapa uang belanja yang berhasil Anda hemat dari sebatang pohon kelor dan 5 polybag cabai? Fitur kalkulator penghematan akan otomatis aktif setelah profil pekarangan Anda terdata lengkap.',
-    shareMessage: 'Pekarangan rumah ternyata bisa menghemat ratusan ribu uang belanja keluarga per bulan! Yuk catat aset tanaman & ternakmu di aplikasi Pekarangan: '
+    whyLocked: 'Catat konsumsi hasil kebun Anda di tab Insight untuk memantau penghematan belanja bulanan.',
+    shareMessage: 'Pekarangan rumah ternyata bisa menghemat ratusan ribu uang belanja keluarga per bulan! Yuk catat aset tanaman & ternakmu: '
   }
 ];

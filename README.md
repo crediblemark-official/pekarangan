@@ -15,12 +15,13 @@ Aplikasi pendataan berbasis Android (Capacitor + Vue 3 + TypeScript + Vite) yang
    - Status lahan, tipe permukaan tanah (multi-select), estimasi luas, zonasi posisi, paparan sinar matahari, sumber air, dan fasilitas limbah.
    - **Client-Side Image Resizer:** Menggunakan Canvas API untuk mengompresi foto kamera HP beresolusi tinggi (hingga 50 MP) menjadi resolusi maksimal `1280x720` (< 800 KB) agar pengiriman instan dan tidak membebani kuota API.
 
-3. **4 Pilar Resmi Aset Produksi:**
-   - **Pilar 1: Rumah Pangan Mandiri (RPM):** Jangkar ketahanan pangan harian keluarga (sayuran, cabai, buah, umbi-umbian) untuk konsumsi segar dan memotong belanja pasar.
-   - **Pilar 2: Kandang Keluarga Produktif:** Sumber protein hewani & modal hidup (*living capital accumulation* / bank hidup darurat): ternak ayam, itik, entok, puyuh, kelinci, kambing (telur/daging + pupuk kandang).
-   - **Pilar 3: Apotik Hidup:** Kedaulatan kesehatan mandiri berbasis TOGA (jahe, kunyit, temulawak, kencur, serai, sirih, lengkuas) untuk obat herbal keluarga & jamu ketahanan ternak.
-   - **Pilar 4: Rumah Produksi (Pabrik Mini):** Unit pascapanen dapur & integrator rantai nilai mikro: mengolah surplus hasil panen & ternak menjadi produk bernilai tambah (sambal kemasan, keripik, jamu herbal, telur asin).
-   - Preset 1-tap chip, input komoditas/produk olahan kustom, jumlah estimasi, media/fasilitas (*Tanah*, *Polybag/Pot*, *Vertikultur*, *Kandang*, *Dapur Pengolahan*), dan catatan kapasitas produksi harian/bulanan.
+3. **4 Pilar Resmi Ekonomi Pekarangan Warga NU:**
+   - **Prinsip Utama:** Mengamankan konsumsi gizi dan memotong belanja dapur keluarga secara mandiri terlebih dahulu; yang dijual/dipasarkan hanyalah **surplus panen** yang tidak habis dikonsumsi sendiri.
+   - **Pilar 1: Rumah Pangan Mandiri (RPM):** Jangkar ketahanan pangan nabati harian keluarga (sayuran, cabai, buah, rempah, umbi-umbian) untuk konsumsi segar dan memotong belanja pasar.
+   - **Pilar 2: Kandang Keluarga Produktif:** Sumber protein hewani segar (telur, daging, susu, ikan lele) & modal hidup (*living bank* darurat keluarga) serta pemasok pupuk kandang alami.
+   - **Pilar 3: Apotek Hidup (Farmasi Mini):** Kedaulatan kesehatan mandiri berbasis TOGA (jahe, kunyit, temulawak, kencur, serai, sirih, kumis kucing, lidah buaya) untuk imunitas dan obat herbal alami keluarga.
+   - **Pilar 4: Rumah Produksi Pekarangan (RPP):** Pabrik mini dapur: mengolah surplus panen kebun & ternak yang tidak habis dikonsumsi menjadi produk bernilai tambah tahan simpan (sambal kemasan, keripik, jamu herbal/instan, telur asin) yang terhubung langsung ke direktori UMKM Mamasar.
+   - Dilengkapi preset 1-tap chip, input komoditas/produk olahan kustom, jumlah estimasi, media/fasilitas (*Tanah*, *Polybag/Pot*, *Vertikultur*, *Kandang*, *Dapur Pengolahan*), dan opsi promosi surplus ke Mamasar.
 
 4. **Mode Offline & Antrean Sinkronisasi (Blank Spot Safe):**
    - Jika kader mendata di pekarangan belakang tanpa koneksi internet, data otomatis disimpan ke antrean offline lokal (`LocalStorage`).

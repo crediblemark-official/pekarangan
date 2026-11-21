@@ -13,7 +13,7 @@ const emit = defineEmits<{
   (e: 'showToast', message: string, type?: 'success' | 'error' | 'warning'): void;
 }>();
 
-const activeCategory = ref<PilarKategori>('1. Rumah Pangan Mandiri');
+const activeCategory = ref<PilarKategori>('1. Rumah Pangan Mandiri (RPM)');
 const showCustomModal = ref(false);
 
 const masterOpts = StorageService.getMasterOptions();
@@ -27,11 +27,12 @@ const onAddMediaOption = (newOpt: SelectOption) => {
 };
 
 const customAsset = reactive<AssetItem>({
-  pilar_kategori: '1. Rumah Pangan Mandiri',
+  pilar_kategori: '1. Rumah Pangan Mandiri (RPM)',
   nama_komoditas: '',
   jumlah_estimasi: 1,
   media_tanam: 'Polybag/Pot',
-  catatan_produksi: ''
+  catatan_produksi: '',
+  publish_to_mamasar: false
 });
 
 const addPreset = (item: PresetItem) => {
@@ -94,10 +95,10 @@ const removeAsset = (index: number) => {
         <button 
           type="button"
           class="tab-btn" 
-          :class="{ active: activeCategory === '1. Rumah Pangan Mandiri' }"
-          @click="activeCategory = '1. Rumah Pangan Mandiri'"
+          :class="{ active: activeCategory === '1. Rumah Pangan Mandiri (RPM)' }"
+          @click="activeCategory = '1. Rumah Pangan Mandiri (RPM)'"
         >
-          🥦 1. Pangan Mandiri
+          🥦 1. Pangan (RPM)
         </button>
         <button 
           type="button"
@@ -110,18 +111,18 @@ const removeAsset = (index: number) => {
         <button 
           type="button"
           class="tab-btn" 
-          :class="{ active: activeCategory === '3. Apotik Hidup' }"
-          @click="activeCategory = '3. Apotik Hidup'"
+          :class="{ active: activeCategory === '3. Apotek Hidup (Farmasi Mini)' }"
+          @click="activeCategory = '3. Apotek Hidup (Farmasi Mini)'"
         >
-          🌿 3. Apotik Hidup
+          🌿 3. Apotek Hidup
         </button>
         <button 
           type="button"
           class="tab-btn" 
-          :class="{ active: activeCategory === '4. Rumah Produksi' }"
-          @click="activeCategory = '4. Rumah Produksi'"
+          :class="{ active: activeCategory === '4. Rumah Produksi Pekarangan (RPP)' }"
+          @click="activeCategory = '4. Rumah Produksi Pekarangan (RPP)'"
         >
-          🍯 4. Pabrik Mini
+          🍯 4. Olahan (RPP)
         </button>
       </div>
 
@@ -228,6 +229,20 @@ const removeAsset = (index: number) => {
               style="font-size: 0.76rem; padding: 5px 8px; margin-top: 2px;"
             />
           </div>
+
+          <!-- Integrasi Mamasar untuk Pilar 4 RPP -->
+          <div 
+            v-if="asset.pilar_kategori.includes('Rumah Produksi') || asset.pilar_kategori.includes('RPP')"
+            style="margin-top: 6px; padding: 6px 8px; background: rgba(34, 197, 94, 0.08); border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.2); display: flex; align-items: center; justify-content: space-between;"
+          >
+            <div style="font-size: 0.72rem; color: #166534; font-weight: 600;">
+              🛒 Promosikan surplus olahan ini ke Direktori UMKM Mamasar
+            </div>
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+              <input type="checkbox" v-model="asset.publish_to_mamasar" />
+              <span>Ya</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -243,10 +258,10 @@ const removeAsset = (index: number) => {
         <div class="form-group">
           <label class="form-label">Kategori Pilar Resmi</label>
           <select v-model="customAsset.pilar_kategori" class="form-control">
-            <option value="1. Rumah Pangan Mandiri">1. Rumah Pangan Mandiri (RPM)</option>
+            <option value="1. Rumah Pangan Mandiri (RPM)">1. Rumah Pangan Mandiri (RPM)</option>
             <option value="2. Kandang Keluarga Produktif">2. Kandang Keluarga Produktif</option>
-            <option value="3. Apotik Hidup">3. Apotik Hidup (TOGA)</option>
-            <option value="4. Rumah Produksi">4. Rumah Produksi (Pabrik Mini)</option>
+            <option value="3. Apotek Hidup (Farmasi Mini)">3. Apotek Hidup (Farmasi Mini)</option>
+            <option value="4. Rumah Produksi Pekarangan (RPP)">4. Rumah Produksi Pekarangan (RPP)</option>
           </select>
         </div>
 

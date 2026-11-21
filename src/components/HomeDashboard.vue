@@ -63,14 +63,14 @@ const comingSoonItems: ComingSoonFeature[] = [
   },
   {
     id: 'market',
-    label: 'Olahan',
-    sub: 'Pabrik Mini',
-    title: 'Rumah Produksi (Pabrik Mini)',
-    icon: '🍯',
+    label: 'Mamasar',
+    sub: 'Pasar UMKM',
+    title: 'Pemasaran Surplus RPP ke Mamasar',
+    icon: '🏪',
     bg: '#f3e8ff',
     border: '#ddd6fe',
-    badge: 'Olahan',
-    desc: 'Etalase produk pascapanen dapur warga (sambal botol, keripik, jamu herbal, telur asin) untuk pasar lokal.'
+    badge: 'Mamasar',
+    desc: 'Salurkan produk olahan surplus dapur (sambal kemasan, keripik, jamu herbal, telur asin) ke direktori UMKM Mamasar.'
   },
   {
     id: 'points',

@@ -4,33 +4,22 @@ import { StorageService } from '../services/storage';
 import { ApiService, getEffectiveGasUrl } from '../services/api';
 import { SecurityService } from '../services/security';
 import type { AppSettings } from '../types';
+import { MWC_ZONES } from '../data/zones';
 
 const emit = defineEmits<{
   (e: 'showToast', message: string, type?: 'success' | 'error' | 'warning'): void;
   (e: 'openQueue'): void;
-  (e: 'lockApp'): void;
 }>();
 
 const settings = reactive<AppSettings>(StorageService.getSettings());
 
-// Security state
-const isBiometricLock = ref(settings.isBiometricLockEnabled !== false);
+// Device ID
 const deviceId = ref(SecurityService.getDeviceId());
-const biometryType = ref('Sidik Jari / Kunci Layar HP');
-const isTestingBio = ref(false);
 
 // Form Lock State (Kunci form jika sudah disimpan)
 const isFormLocked = ref(true);
 
-const unlockForm = async () => {
-  if (isBiometricLock.value && SecurityService.isNative()) {
-    const auth = await SecurityService.authenticate('Verifikasi kunci layar untuk mengubah identitas pekarangan');
-    if (!auth.success) {
-      emit('showToast', 'Verifikasi dibatalkan: Form tetap terkunci', 'warning');
-      return;
-    }
-  }
-  // Muat ulang data terbaru dari storage lokal agar input tidak kosong
+const unlockForm = () => {
   const freshSettings = StorageService.getSettings();
   Object.assign(settings, freshSettings);
   isFormLocked.value = false;
@@ -51,19 +40,13 @@ const livestockCount = ref(StorageService.getLivestocks().length);
 const totalSavings = ref(StorageService.getTotalSavings());
 const queueCount = ref(StorageService.getSyncQueue().length);
 
-onMounted(async () => {
+onMounted(() => {
   // Pastikan form selalu sinkron dengan data profil terbaru saat halaman dibuka
   const freshSettings = StorageService.getSettings();
   Object.assign(settings, freshSettings);
-
-  const bio = await SecurityService.checkBiometry();
-  if (bio.biometryType) {
-    biometryType.value = bio.biometryType;
-  }
 });
 
 const saveProfile = () => {
-  settings.isBiometricLockEnabled = isBiometricLock.value;
   StorageService.saveSettings({ ...settings });
 
   // Sinkronkan juga ke direktori anggota agar nama pemilik dan pekarangan langsung terbarui
@@ -75,6 +58,8 @@ const saveProfile = () => {
     members[ownerIdx].name = settings.ownerName;
     members[ownerIdx].yardName = settings.yardName;
     members[ownerIdx].phone = settings.phone;
+    members[ownerIdx].mwcZone = settings.mwcZone;
+    members[ownerIdx].ranting = settings.ranting;
     members[ownerIdx].rtRw = settings.defaultRtRw;
     members[ownerIdx].statusLahan = settings.landStatus;
     members[ownerIdx].estimasiLuas = settings.landArea;
@@ -119,45 +104,7 @@ const saveProfile = () => {
   }
 
   isFormLocked.value = true; // Kunci otomatis setelah disimpan!
-  emit('showToast', 'Identitas tersimpan dan otomatis dikunci kembali! 🔒', 'success');
-};
-
-const toggleBiometricLock = async () => {
-  // Verifikasi biometrik dulu sebelum mengubah proteksi
-  const res = await SecurityService.authenticate('Konfirmasi perubahan pengaturan keamanan');
-  if (res.success) {
-    isBiometricLock.value = !isBiometricLock.value;
-    settings.isBiometricLockEnabled = isBiometricLock.value;
-    StorageService.saveSettings({ ...settings });
-    emit(
-      'showToast', 
-      isBiometricLock.value 
-        ? 'Proteksi biometrik & kunci layar DIAKTIFKAN' 
-        : 'Proteksi biometrik DINONAKTIFKAN', 
-      'success'
-    );
-  } else {
-    emit('showToast', res.message || 'Verifikasi biometrik gagal', 'error');
-  }
-};
-
-const testBiometric = async () => {
-  isTestingBio.value = true;
-  try {
-    const res = await SecurityService.authenticate('Uji coba verifikasi biometrik pekarangan');
-    if (res.success) {
-      emit('showToast', 'Verifikasi ' + biometryType.value + ' berhasil! Sensor berfungsi sempurna.', 'success');
-    } else {
-      emit('showToast', res.message || 'Verifikasi dibatalkan', 'warning');
-    }
-  } finally {
-    isTestingBio.value = false;
-  }
-};
-
-const lockAppNow = () => {
-  SecurityService.lockSession();
-  emit('lockApp');
+  emit('showToast', 'Identitas pekarangan berhasil disimpan! 🏡', 'success');
 };
 
 const isSyncingData = ref(false);
@@ -334,6 +281,33 @@ const clearAppCache = async () => {
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <div class="form-group">
+            <label class="form-label">MWC (Kecamatan)</label>
+            <select 
+              v-model="settings.mwcZone" 
+              class="form-control"
+              :disabled="isFormLocked"
+              :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
+            >
+              <option v-for="z in MWC_ZONES" :key="z.slug" :value="z.name">
+                {{ z.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ranting (Desa)</label>
+            <input 
+              v-model="settings.ranting" 
+              type="text" 
+              class="form-control" 
+              :disabled="isFormLocked"
+              :style="isFormLocked ? { background: '#f8fafc', color: '#1e293b', cursor: 'not-allowed' } : {}"
+              placeholder="Contoh: Gapura Barat"
+            />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div class="form-group">
             <label class="form-label">RT / RW</label>
             <input 
               v-model="settings.defaultRtRw" 
@@ -441,65 +415,12 @@ const clearAppCache = async () => {
       </div>
     </div>
 
-    <!-- Biometric & Screen Lock Security Card -->
-    <div class="card">
-      <div class="card-title">
-        <span>🛡️ Keamanan HP</span>
-        <span 
-          :style="{
-            fontSize: '0.65rem',
-            padding: '2px 7px',
-            borderRadius: '4px',
-            fontWeight: '700',
-            background: isBiometricLock ? '#dcfce7' : '#f3f4f6',
-            color: isBiometricLock ? '#166534' : '#6b7280'
-          }"
-        >
-          {{ isBiometricLock ? 'Aktif' : 'Nonaktif' }}
+    <!-- Device Identity Info Card -->
+    <div class="card" style="padding: 10px 14px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.76rem;">
+        <span style="color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
+          <span>📱</span> ID Perangkat Warga:
         </span>
-      </div>
-
-      <!-- Toggle Switch Row -->
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); margin-bottom: 8px;">
-        <div>
-          <div style="font-weight: 700; font-size: 0.82rem;">Kunci Layar HP</div>
-          <div style="font-size: 0.68rem; color: var(--text-dim);">Kunci otomatis saat aplikasi dibuka</div>
-        </div>
-        <button 
-          type="button" 
-          :class="['btn-sm', isBiometricLock ? 'btn-primary' : 'btn-outline']"
-          style="padding: 4px 10px; font-weight: 700; font-size: 0.72rem;"
-          @click="toggleBiometricLock"
-        >
-          {{ isBiometricLock ? 'Aktif' : 'Aktifkan' }}
-        </button>
-      </div>
-
-      <!-- Action Buttons -->
-      <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-        <button 
-          type="button" 
-          class="btn btn-outline btn-full"
-          style="padding: 7px; font-size: 0.78rem;"
-          :disabled="isTestingBio"
-          @click="testBiometric"
-        >
-          <span v-if="isTestingBio" class="spinner" style="width: 12px; height: 12px;"></span>
-          <span v-else>👆 Tes Sensor</span>
-        </button>
-        <button 
-          type="button" 
-          class="btn btn-outline btn-full"
-          style="padding: 7px; font-size: 0.78rem; color: #15803d; border-color: #86efac;"
-          @click="lockAppNow"
-        >
-          🔒 Kunci
-        </button>
-      </div>
-
-      <!-- Device Token ID -->
-      <div style="padding: 6px 0; font-size: 0.68rem; color: var(--text-dim); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle);">
-        <span>ID Perangkat:</span>
         <code style="font-family: monospace; font-weight: 700; color: var(--primary);">{{ deviceId.substring(0, 16) }}...</code>
       </div>
     </div>

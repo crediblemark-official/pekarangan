@@ -5,12 +5,21 @@ import type { GeoLocationResult } from '../services/geo';
 import { StorageService } from '../services/storage';
 import { ApiService } from '../services/api';
 import SearchableSelect, { type SelectOption } from './SearchableSelect.vue';
+import { MWC_ZONES } from '../data/zones';
 
 const props = defineProps<{
   member: MemberData;
   geoData: GeoLocationResult | null;
   isGeoLoading: boolean;
 }>();
+
+const settings = StorageService.getSettings();
+if (!props.member.mwc_zone) {
+  props.member.mwc_zone = settings.mwcZone || 'MWC Kota Sumenep';
+}
+if (!props.member.ranting && settings.ranting) {
+  props.member.ranting = settings.ranting;
+}
 
 defineEmits<{
   (e: 'fetchLocation'): void;
@@ -76,6 +85,26 @@ const onAddRtRw = (newOpt: SelectOption) => {
           placeholder="081234567890"
           required
         />
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div class="form-group">
+          <label class="form-label">MWC (Kecamatan) <span class="req">*</span></label>
+          <select v-model="member.mwc_zone" class="form-control">
+            <option v-for="z in MWC_ZONES" :key="z.slug" :value="z.name">
+              {{ z.name }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ranting (Desa)</label>
+          <input 
+            v-model="member.ranting" 
+            type="text" 
+            class="form-control" 
+            placeholder="Contoh: Gapura Barat"
+          />
+        </div>
       </div>
 
       <div class="form-group">

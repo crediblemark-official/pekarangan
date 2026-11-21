@@ -113,6 +113,8 @@ export const StorageService = {
 
         return {
           gasUrl: getEffectiveGasUrl(),
+          mwcZone: parsed.mwcZone || 'MWC Kota Sumenep',
+          ranting: parsed.ranting || '',
           defaultRtRw: rt,
           cadreName: owner,
           ownerName: owner,
@@ -122,7 +124,6 @@ export const StorageService = {
           landStatus: status,
           landArea: area,
           theme: parsed.theme || 'dark',
-          isBiometricLockEnabled: parsed.isBiometricLockEnabled !== false,
           deviceId: parsed.deviceId
         };
       }
@@ -131,6 +132,8 @@ export const StorageService = {
     }
     return {
       gasUrl: getEffectiveGasUrl(),
+      mwcZone: 'MWC Kota Sumenep',
+      ranting: '',
       defaultRtRw: '',
       cadreName: '',
       ownerName: '',
@@ -139,8 +142,7 @@ export const StorageService = {
       addressDetail: '',
       landStatus: 'Milik Sendiri',
       landArea: '10-30 m²',
-      theme: 'dark',
-      isBiometricLockEnabled: true
+      theme: 'dark'
     };
   },
 

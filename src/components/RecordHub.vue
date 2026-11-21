@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import type { PlantItem, LivestockItem, ActivityLogItem } from '../types';
 import { StorageService } from '../services/storage';
 import { ApiService } from '../services/api';
-import { SecurityService } from '../services/security';
 import SearchableSelect, { type SelectOption } from './SearchableSelect.vue';
 
 const emit = defineEmits<{
@@ -109,7 +108,7 @@ const harvestForm = ref({
   qty: '',
   unit: 'Gram / Ikat',
   estimatedValue: 20000,
-  allocation: 'konsumsi' as 'konsumsi' | 'sedekah' | 'barter'
+  allocation: 'konsumsi' as 'konsumsi' | 'sedekah' | 'barter' | 'olahan_rpp' | 'jual_surplus'
 });
 
 // Aksi Tambah Tanam Baru (Dengan HST Dinamis)
@@ -157,13 +156,8 @@ const saveNewPlant = () => {
   newPlant.value.variety = '';
 };
 
-// Hapus Tanaman (Dilindungi Kunci Layar / Biometrik)
-const deletePlantItem = async (plant: PlantItem) => {
-  const auth = await SecurityService.authenticate(`Konfirmasi izin hapus tanaman ${plant.name}`);
-  if (!auth.success) {
-    emit('showToast', auth.message || 'Verifikasi biometrik/kunci layar diperlukan', 'warning');
-    return;
-  }
+// Hapus Tanaman
+const deletePlantItem = (plant: PlantItem) => {
   if (confirm(`Hapus catatan tanaman "${plant.name}"? Data akan dibersihkan dari daftar aktif.`)) {
     StorageService.deletePlant(plant.id);
     activePlants.value = activePlants.value.filter(p => p.id !== plant.id);
@@ -215,13 +209,8 @@ const saveNewLivestock = () => {
   newLivestock.value.note = '';
 };
 
-// Hapus Ternak (Dilindungi Kunci Layar / Biometrik)
-const deleteLivestockItem = async (live: LivestockItem) => {
-  const auth = await SecurityService.authenticate(`Konfirmasi izin hapus ternak ${live.name}`);
-  if (!auth.success) {
-    emit('showToast', auth.message || 'Verifikasi biometrik/kunci layar diperlukan', 'warning');
-    return;
-  }
+// Hapus Ternak
+const deleteLivestockItem = (live: LivestockItem) => {
   if (confirm(`Hapus catatan kelompok ternak "${live.name}"?`)) {
     StorageService.deleteLivestock(live.id);
     activeLivestocks.value = activeLivestocks.value.filter(l => l.id !== live.id);
@@ -321,9 +310,11 @@ const saveHarvest = () => {
   StorageService.addHarvestRecord(harvestRecord);
 
   const allocationNotes: Record<string, string> = {
-    konsumsi: 'Dikonsumsi mandiri (menghemat pengeluaran belanja)',
+    konsumsi: 'Dikonsumsi mandiri keluarga (menghemat pengeluaran belanja)',
     sedekah: 'Disedekahkan ke tetangga / warga yang membutuhkan',
-    barter: 'Surplus ditawarkan ke Bursa Barter Tetangga'
+    barter: 'Surplus ditawarkan ke Bursa Barter Tetangga',
+    olahan_rpp: 'Surplus diselamatkan ke Rumah Produksi Pekarangan (RPP) untuk diolah',
+    jual_surplus: 'Surplus segar dijual ke tetangga / pasokan konsumsi acara NU'
   };
 
   const log: ActivityLogItem = {
@@ -953,28 +944,24 @@ const saveQuickConsume = () => {
           <label class="form-label">Alokasi Hasil Panen</label>
           <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
             <label v-for="opt in [
-              { val: 'konsumsi', icon: '🍽️', label: 'Konsumsi Mandiri', sub: 'Hemat pengeluaran belanja keluarga', soon: false },
-              { val: 'sedekah',  icon: '❤️', label: 'Sedekah ke Tetangga', sub: 'Tercatat di Penghematan sebagai rekor kebaikan', soon: true },
-              { val: 'barter',   icon: '🧺', label: 'Surplus untuk Barter', sub: 'Ditawarkan ke Bursa Barter lingkungan', soon: true }
+              { val: 'konsumsi', icon: '🍽️', label: 'Konsumsi Mandiri Keluarga', sub: 'Makan sendiri & hemat belanja dapur' },
+              { val: 'olahan_rpp', icon: '🍯', label: 'Diolah di RPP (Pilar 4)', sub: 'Diselamatkan jadi sambal kemasan, keripik, jamu' },
+              { val: 'sedekah',  icon: '❤️', label: 'Sedekah ke Tetangga', sub: 'Berbagi ke kerabat / tetangga yang membutuhkan' },
+              { val: 'barter',   icon: '🧺', label: 'Surplus untuk Barter', sub: 'Tukar bumbu/sayur dengan tetangga sekitar' },
+              { val: 'jual_surplus', icon: '🏪', label: 'Jual Surplus / Acara NU', sub: 'Dijual segar atau pasok konsumsi kegiatan jam\'iyah' }
             ]" :key="opt.val" :style="{
               display: 'flex', alignItems: 'center', gap: '10px',
               padding: '9px 12px', borderRadius: '10px',
-              cursor: opt.soon ? 'not-allowed' : 'pointer',
-              opacity: opt.soon ? '0.55' : '1',
+              cursor: 'pointer',
               border: '1.5px solid ' + (harvestForm.allocation === opt.val ? 'var(--primary)' : 'var(--border-subtle)'),
               background: harvestForm.allocation === opt.val ? '#f0fdf4' : '#fff',
               transition: 'all 0.15s'
-            }" @click="!opt.soon && (harvestForm.allocation = opt.val as 'konsumsi' | 'sedekah' | 'barter')">
-              <input type="radio" :value="opt.val" v-model="harvestForm.allocation" :disabled="opt.soon" style="accent-color: var(--primary); width:15px; height:15px;" />
+            }" @click="harvestForm.allocation = opt.val as any">
+              <input type="radio" :value="opt.val" v-model="harvestForm.allocation" style="accent-color: var(--primary); width:15px; height:15px;" />
               <span style="font-size: 1.1rem;">{{ opt.icon }}</span>
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 5px;">
                   <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-main);">{{ opt.label }}</span>
-                  <span v-if="opt.soon" style="
-                    font-size: 0.5rem; font-weight: 800; letter-spacing: 0.8px;
-                    text-transform: uppercase; background: #d97706;
-                    color: #fff; padding: 1px 5px; border-radius: 9999px;
-                  ">Segera Hadir</span>
                 </div>
                 <div style="font-size: 0.66rem; color: var(--text-muted);">{{ opt.sub }}</div>
               </div>

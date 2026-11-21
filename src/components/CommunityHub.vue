@@ -124,6 +124,7 @@ const openWhatsApp = (phone: string, name: string) => {
               🏡 {{ m.yardName }}
             </div>
             <div class="member-meta">
+              <span v-if="m.ranting">{{ m.ranting }} • </span>
               <span>RT {{ m.rtRw }}</span>
               <span>•</span>
               <span>{{ m.statusLahan }}</span>

@@ -4,6 +4,7 @@ import { StorageService } from '../services/storage';
 import { ApiService, getEffectiveGasUrl } from '../services/api';
 import { SecurityService } from '../services/security';
 import type { AppSettings, CommunityMemberItem } from '../types';
+import { MWC_ZONES } from '../data/zones';
 
 const emit = defineEmits<{
   (e: 'done'): void;
@@ -18,13 +19,17 @@ const isOtherDeviceActive = ref(false);
 
 const form = reactive({
   ownerName: currentSettings.ownerName || '',
-  phone: currentSettings.phone || ''
+  phone: currentSettings.phone || '',
+  mwcZone: currentSettings.mwcZone || 'MWC Kota Sumenep',
+  ranting: currentSettings.ranting || ''
 });
 
 const isValid = computed(() => {
   return (
     form.ownerName.trim().length >= 2 &&
-    form.phone.trim().replace(/\D/g, '').length >= 9
+    form.phone.trim().replace(/\D/g, '').length >= 9 &&
+    form.mwcZone &&
+    form.ranting.trim().length >= 2
   );
 });
 
@@ -84,6 +89,8 @@ const submitIdentity = async () => {
     ...currentSettings,
     ownerName: form.ownerName.trim(),
     phone: form.phone.trim(),
+    mwcZone: form.mwcZone,
+    ranting: form.ranting.trim(),
     deviceId: deviceId
   };
 
@@ -99,13 +106,15 @@ const submitIdentity = async () => {
     id: memberId,
     name: form.ownerName.trim(),
     phone: form.phone.trim(),
+    mwcZone: form.mwcZone,
+    ranting: form.ranting.trim(),
     rtRw: foundAccount.value?.rt_rw || currentSettings.defaultRtRw || '-',
     statusLahan: currentSettings.landStatus || 'Milik Sendiri',
     estimasiLuas: currentSettings.landArea || '10-30 m²',
     zonasi: ['Teras Depan', 'Pekarangan Samping'],
     komoditas: [],
     joinedDate: new Date().toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }),
-    bio: 'Pemilik pekarangan mandiri.',
+    bio: 'Pemilik pekarangan mandiri warga NU.',
     yardName: currentSettings.yardName || 'Pekarangan Rumah',
     isDeviceOwner: true
   };
@@ -245,6 +254,28 @@ const submitIdentity = async () => {
             autocomplete="name"
           />
           <span class="field-hint">Nama penanggung jawab pekarangan keluarga.</span>
+        </div>
+
+        <!-- Field 3: Wilayah MWC & Ranting (Teritorial NU) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div class="field-group">
+            <label class="field-label">MWC (Kecamatan) <span class="required">*</span></label>
+            <select v-model="form.mwcZone" class="field-input">
+              <option v-for="z in MWC_ZONES" :key="z.slug" :value="z.name">
+                {{ z.name }}
+              </option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Ranting (Desa) <span class="required">*</span></label>
+            <input 
+              v-model="form.ranting" 
+              type="text" 
+              class="field-input" 
+              placeholder="Contoh: Gapura Barat"
+              required 
+            />
+          </div>
         </div>
 
         <!-- Device Info -->

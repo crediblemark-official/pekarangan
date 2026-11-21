@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * PEKARANGAN - TYPESCRIPT DATA MODELS & INTERFACES (4 PILAR RESMI)
+ * PEKARANGAN - TYPESCRIPT DATA MODELS & INTERFACES (4 PILAR RESMI BAKU)
  * ============================================================================
  */
 
@@ -9,6 +9,8 @@ export interface MemberData {
   nama_lengkap: string;
   nama_panggilan: string;
   nomor_wa: string;
+  mwc_zone?: string;
+  ranting?: string;
   rt_rw: string;
   alamat_catatan: string;
   gps_lat_long: string;
@@ -19,6 +21,8 @@ export interface CommunityMemberItem {
   id: string;
   name: string;
   phone: string;
+  mwcZone?: string;
+  ranting?: string;
   rtRw: string;
   statusLahan: string;
   estimasiLuas: string;
@@ -49,17 +53,34 @@ export interface YardData {
 }
 
 /**
- * 4 PILAR RESMI PEKARANGAN:
- * 1. Rumah Pangan Mandiri (RPM) - Ketahanan pangan sayur & karbohidrat
- * 2. Kandang Keluarga Produktif - Protein hewani & modal hidup (bank hidup)
- * 3. Apotik Hidup - TOGA & kedaulatan herbal alami
- * 4. Rumah Produksi (Pabrik Mini) - Integrator nilai tambah & hilirisasi dapur
+ * 4 PILAR RESMI EKONOMI PEKARANGAN WARGA NU:
+ * 1. Rumah Pangan Mandiri (RPM) - Jangkar ketahanan nabati harian keluarga
+ * 2. Kandang Keluarga Produktif - Protein hewani, pupuk organik & tabungan riil (Living Bank)
+ * 3. Apotek Hidup (Farmasi Mini) - TOGA & kedaulatan kesehatan herbal alami
+ * 4. Rumah Produksi Pekarangan (RPP) - Pabrik mini hilirisasi dapur & penyelamatan surplus
  */
 export type PilarKategori = 
-  | "1. Rumah Pangan Mandiri" 
+  | "1. Rumah Pangan Mandiri (RPM)" 
   | "2. Kandang Keluarga Produktif" 
-  | "3. Apotik Hidup" 
-  | "4. Rumah Produksi";
+  | "3. Apotek Hidup (Farmasi Mini)" 
+  | "4. Rumah Produksi Pekarangan (RPP)";
+
+export function normalizePilarKategori(cat: string): PilarKategori {
+  if (!cat) return "1. Rumah Pangan Mandiri (RPM)";
+  if (cat.includes("Rumah Pangan") || cat.includes("RPM") || cat.startsWith("1.")) {
+    return "1. Rumah Pangan Mandiri (RPM)";
+  }
+  if (cat.includes("Kandang") || cat.startsWith("2.")) {
+    return "2. Kandang Keluarga Produktif";
+  }
+  if (cat.includes("Apotek") || cat.includes("Apotik") || cat.includes("Farmasi") || cat.startsWith("3.")) {
+    return "3. Apotek Hidup (Farmasi Mini)";
+  }
+  if (cat.includes("Rumah Produksi") || cat.includes("RPP") || cat.startsWith("4.")) {
+    return "4. Rumah Produksi Pekarangan (RPP)";
+  }
+  return "1. Rumah Pangan Mandiri (RPM)";
+}
 
 export type MediaTanamWadah = 
   | "Langsung di Tanah" 
@@ -76,6 +97,7 @@ export interface AssetItem {
   jumlah_estimasi: number;
   media_tanam: MediaTanamWadah;
   catatan_produksi?: string;
+  publish_to_mamasar?: boolean; // Opsi promosi surplus RPP ke Mamasar
 }
 
 export interface SurveyPayload {
@@ -87,6 +109,8 @@ export interface SurveyPayload {
 
 export interface AppSettings {
   gasUrl: string;
+  mwcZone?: string;
+  ranting?: string;
   defaultRtRw: string;
   cadreName?: string;
   ownerName: string; // Nama Pemilik / Keluarga (Milik Siapa)
@@ -96,7 +120,6 @@ export interface AppSettings {
   landStatus: string; // Status Lahan (Milik Sendiri / Sewa)
   landArea: string; // Estimasi Luas Lahan
   theme: "dark" | "light";
-  isBiometricLockEnabled?: boolean;
   deviceId?: string;
 }
 
@@ -173,7 +196,9 @@ export interface HarvestRecordItem {
   qty: string;
   unit: string;
   estimatedValue: number;
-  allocation: 'konsumsi' | 'sedekah' | 'barter';
+  allocation: 'konsumsi' | 'sedekah' | 'barter' | 'olahan_rpp' | 'jual_surplus';
+  consumedQty?: number;
+  surplusQty?: number;
   date: string;
   note: string;
   ownerDeviceId?: string;
@@ -208,5 +233,3 @@ export interface MasterOptions {
   jenis_makan: string[];
   media_tanam: string[];
 }
-
-

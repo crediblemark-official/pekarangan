@@ -13,10 +13,8 @@ import CommunityHub from './components/CommunityHub.vue';
 import RecordHub from './components/RecordHub.vue';
 import SavingsKasMockup from './components/SavingsKasMockup.vue';
 import ProfileView from './components/ProfileView.vue';
-import BiometricLockOverlay from './components/BiometricLockOverlay.vue';
 import OnboardingSetup from './components/OnboardingSetup.vue';
 import { SecurityService } from './services/security';
-import { Capacitor } from '@capacitor/core';
 
 // Survey Step Components (Fase 1)
 import Step1Member from './components/Step1Member.vue';
@@ -34,24 +32,6 @@ const onOnboardingDone = () => {
   needsOnboarding.value = false;
   appSessionKey.value++;
   showToast('Identitas pekarangan berhasil disimpan! Selamat datang.', 'success');
-};
-
-// Biometric & Screen Lock State: Aktif di HP Android fisik, langsung terbuka di desktop browser
-const isBiometricEnabled = ref(StorageService.getSettings().isBiometricLockEnabled !== false);
-const isAppLocked = ref(
-  Capacitor.isNativePlatform() &&
-  isBiometricEnabled.value &&
-  !SecurityService.isUnlocked()
-);
-
-const lockAppNow = () => {
-  SecurityService.lockSession();
-  isAppLocked.value = true;
-};
-
-const onAppUnlocked = () => {
-  isAppLocked.value = false;
-  showToast('Kunci layar terbuka. Selamat datang!', 'success');
 };
 
 // Active Screen (Default: 'home' Dashboard!)
@@ -130,7 +110,7 @@ const yard = reactive<YardData>({
 
 const assets = ref<AssetItem[]>([
   { 
-    pilar_kategori: '1. Rumah Pangan Mandiri', 
+    pilar_kategori: '1. Rumah Pangan Mandiri (RPM)', 
     nama_komoditas: 'Cabai Rawit', 
     jumlah_estimasi: 5, 
     media_tanam: 'Polybag/Pot' 
@@ -217,7 +197,7 @@ const resetForm = () => {
   photo.value = null;
   geoData.value = null;
   assets.value = [
-    { pilar_kategori: '1. Rumah Pangan Mandiri', nama_komoditas: 'Cabai Rawit', jumlah_estimasi: 5, media_tanam: 'Polybag/Pot' }
+    { pilar_kategori: '1. Rumah Pangan Mandiri (RPM)', nama_komoditas: 'Cabai Rawit', jumlah_estimasi: 5, media_tanam: 'Polybag/Pot' }
   ];
 };
 
@@ -434,16 +414,6 @@ onMounted(() => {
         >
           📥 <span style="font-size: 0.7rem; font-weight: 700; color: var(--accent);">{{ syncQueue.length }}</span>
         </button>
-
-        <!-- Quick Biometric Lock Button -->
-        <button 
-          v-if="isBiometricEnabled" 
-          class="btn-icon" 
-          @click="lockAppNow"
-          title="Kunci aplikasi dengan sidik jari/kunci layar"
-        >
-          🔒
-        </button>
       </div>
     </header>
 
@@ -590,7 +560,6 @@ onMounted(() => {
         v-if="activeNavTab === 'profile'"
         @show-toast="showToast"
         @open-queue="showQueueModal = true"
-        @lock-app="lockAppNow"
       />
     </main>
 
@@ -598,12 +567,6 @@ onMounted(() => {
     <OnboardingSetup 
       v-if="needsOnboarding" 
       @done="onOnboardingDone" 
-    />
-
-    <!-- Biometric & Screen Lock Full-Screen Gate -->
-    <BiometricLockOverlay 
-      v-if="isAppLocked && !needsOnboarding" 
-      @unlocked="onAppUnlocked" 
     />
 
     <!-- Fixed Bottom Navigation Bar (Tombol tengah berubah jadi Lanjut / Simpan saat mode survei) -->
