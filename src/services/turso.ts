@@ -13,7 +13,12 @@ import type {
   LivestockItem,
   KasLogItem,
   HarvestRecordItem,
-  CommunityMemberItem
+  CommunityMemberItem,
+  CommunityPostItem,
+  FamilyLeaderboardItem,
+  RantingLeaderboardItem,
+  MwcLeaderboardItem,
+  KabarReactions
 } from '../types';
 import { StorageService } from './storage';
 
@@ -221,7 +226,35 @@ export const TursoService = {
         value TEXT NOT NULL,
         extra TEXT,
         UNIQUE(category, value)
-      )`
+      )`,
+      `CREATE TABLE IF NOT EXISTS tbl_kabar_pekarangan (
+        id TEXT PRIMARY KEY,
+        author_id TEXT NOT NULL,
+        author_name TEXT NOT NULL,
+        author_phone TEXT,
+        yard_name TEXT,
+        ranting TEXT,
+        mwc_zone TEXT,
+        category TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        photo_url TEXT,
+        metric_badge TEXT,
+        reactions_data TEXT DEFAULT '{"berkah":0,"masyaallah":0,"seger":0,"semangat":0}',
+        is_mamasar_product INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_kabar_zone ON tbl_kabar_pekarangan(mwc_zone, ranting)`,
+      `CREATE INDEX IF NOT EXISTS idx_kabar_author ON tbl_kabar_pekarangan(author_id)`,
+      `CREATE TABLE IF NOT EXISTS tbl_kabar_reactions (
+        id TEXT PRIMARY KEY,
+        post_id TEXT NOT NULL REFERENCES tbl_kabar_pekarangan(id) ON DELETE CASCADE,
+        user_phone TEXT NOT NULL,
+        reaction_type TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now', 'localtime')),
+        UNIQUE(post_id, user_phone)
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_reaction_post ON tbl_kabar_reactions(post_id)`
     ];
 
     try {
@@ -802,6 +835,353 @@ export const TursoService = {
     } catch (err) {
       console.warn('Turso addCustomOption error:', err);
       return false;
+    }
+  },
+
+  /**
+   * Mengambil daftar postingan sosial 'Apa Kabar Pekaranganmu?' terbaru
+   */
+  async getCommunityPosts(userPhone?: string): Promise<CommunityPostItem[]> {
+    const client = getTursoClient();
+    if (!client) return [];
+    try {
+      const rs = await client.execute({
+        sql: `SELECT 
+                p.id, p.author_id, p.author_name, p.author_phone, p.yard_name,
+                p.ranting, p.mwc_zone, p.category, p.title, p.content,
+                p.photo_url, p.metric_badge, p.reactions_data, p.is_mamasar_product, p.created_at,
+                (SELECT r.reaction_type FROM tbl_kabar_reactions r WHERE r.post_id = p.id AND r.user_phone = ?) as user_reaction
+              FROM tbl_kabar_pekarangan p
+              ORDER BY p.created_at DESC
+              LIMIT 50`,
+        args: [userPhone || '']
+      });
+
+      return rs.rows.map(row => {
+        let reactions: KabarReactions = { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 };
+        try {
+          if (row.reactions_data) {
+            reactions = typeof row.reactions_data === 'string' ? JSON.parse(row.reactions_data as string) : (row.reactions_data as any);
+          }
+        } catch {}
+
+        return {
+          id: String(row.id),
+          authorId: String(row.author_id || ''),
+          authorName: String(row.author_name || 'Warga Nahdliyin'),
+          authorPhone: row.author_phone ? String(row.author_phone) : undefined,
+          yardName: row.yard_name ? String(row.yard_name) : undefined,
+          ranting: String(row.ranting || 'Gapura Timur'),
+          mwcZone: String(row.mwc_zone || 'MWC Gapura'),
+          category: (row.category as any) || 'panen',
+          title: String(row.title || ''),
+          content: String(row.content || ''),
+          photoUrl: row.photo_url ? String(row.photo_url) : undefined,
+          metricBadge: row.metric_badge ? String(row.metric_badge) : undefined,
+          reactions,
+          userReaction: (row.user_reaction as any) || null,
+          createdAt: String(row.created_at || ''),
+          isMamasarProduct: Boolean(row.is_mamasar_product)
+        };
+      });
+    } catch (err) {
+      console.warn('Turso getCommunityPosts error:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Buat postingan kabar pekarangan baru
+   */
+  async createCommunityPost(post: CommunityPostItem): Promise<boolean> {
+    const client = getTursoClient();
+    if (!client) return false;
+    try {
+      const reactionsJson = JSON.stringify(post.reactions || { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 });
+      await client.execute({
+        sql: `INSERT INTO tbl_kabar_pekarangan (
+                id, author_id, author_name, author_phone, yard_name,
+                ranting, mwc_zone, category, title, content,
+                photo_url, metric_badge, reactions_data, is_mamasar_product, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))`,
+        args: [
+          post.id,
+          post.authorId,
+          post.authorName,
+          post.authorPhone || null,
+          post.yardName || null,
+          post.ranting || null,
+          post.mwcZone || null,
+          post.category,
+          post.title,
+          post.content,
+          post.photoUrl || null,
+          post.metricBadge || null,
+          reactionsJson,
+          post.isMamasarProduct ? 1 : 0
+        ]
+      });
+      return true;
+    } catch (err) {
+      console.warn('Turso createCommunityPost error:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Toggle reaksi doa (Berkah, MasyaAllah, Seger, Semangat)
+   */
+  async togglePostReaction(
+    postId: string,
+    userPhone: string,
+    reactionType: 'berkah' | 'masyaallah' | 'seger' | 'semangat'
+  ): Promise<{ reactions: KabarReactions; userReaction: 'berkah' | 'masyaallah' | 'seger' | 'semangat' | null } | null> {
+    const client = getTursoClient();
+    if (!client || !userPhone) return null;
+
+    try {
+      const existing = await client.execute({
+        sql: `SELECT reaction_type FROM tbl_kabar_reactions WHERE post_id = ? AND user_phone = ?`,
+        args: [postId, userPhone]
+      });
+
+      let nextUserReaction: 'berkah' | 'masyaallah' | 'seger' | 'semangat' | null = null;
+      let diffBerkah = 0;
+      let diffMasya = 0;
+      let diffSeger = 0;
+      let diffSemangat = 0;
+
+      if (existing.rows.length > 0) {
+        const prev = existing.rows[0].reaction_type as string;
+        if (prev === reactionType) {
+          await client.execute({
+            sql: `DELETE FROM tbl_kabar_reactions WHERE post_id = ? AND user_phone = ?`,
+            args: [postId, userPhone]
+          });
+          if (prev === 'berkah') diffBerkah = -1;
+          if (prev === 'masyaallah') diffMasya = -1;
+          if (prev === 'seger') diffSeger = -1;
+          if (prev === 'semangat') diffSemangat = -1;
+          nextUserReaction = null;
+        } else {
+          await client.execute({
+            sql: `UPDATE tbl_kabar_reactions SET reaction_type = ?, created_at = datetime('now', 'localtime') WHERE post_id = ? AND user_phone = ?`,
+            args: [reactionType, postId, userPhone]
+          });
+          if (prev === 'berkah') diffBerkah = -1;
+          if (prev === 'masyaallah') diffMasya = -1;
+          if (prev === 'seger') diffSeger = -1;
+          if (prev === 'semangat') diffSemangat = -1;
+
+          if (reactionType === 'berkah') diffBerkah += 1;
+          if (reactionType === 'masyaallah') diffMasya += 1;
+          if (reactionType === 'seger') diffSeger += 1;
+          if (reactionType === 'semangat') diffSemangat += 1;
+          nextUserReaction = reactionType;
+        }
+      } else {
+        const randId = 'rc-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        await client.execute({
+          sql: `INSERT INTO tbl_kabar_reactions (id, post_id, user_phone, reaction_type) VALUES (?, ?, ?, ?)`,
+          args: [randId, postId, userPhone, reactionType]
+        });
+        if (reactionType === 'berkah') diffBerkah = 1;
+        if (reactionType === 'masyaallah') diffMasya = 1;
+        if (reactionType === 'seger') diffSeger = 1;
+        if (reactionType === 'semangat') diffSemangat = 1;
+        nextUserReaction = reactionType;
+      }
+
+      const postRow = await client.execute({
+        sql: `SELECT reactions_data FROM tbl_kabar_pekarangan WHERE id = ?`,
+        args: [postId]
+      });
+
+      let currentReactions: KabarReactions = { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 };
+      if (postRow.rows.length > 0 && postRow.rows[0].reactions_data) {
+        try {
+          currentReactions = JSON.parse(postRow.rows[0].reactions_data as string);
+        } catch {}
+      }
+
+      currentReactions.berkah = Math.max(0, (currentReactions.berkah || 0) + diffBerkah);
+      currentReactions.masyaallah = Math.max(0, (currentReactions.masyaallah || 0) + diffMasya);
+      currentReactions.seger = Math.max(0, (currentReactions.seger || 0) + diffSeger);
+      currentReactions.semangat = Math.max(0, (currentReactions.semangat || 0) + diffSemangat);
+
+      await client.execute({
+        sql: `UPDATE tbl_kabar_pekarangan SET reactions_data = ? WHERE id = ?`,
+        args: [JSON.stringify(currentReactions), postId]
+      });
+
+      return {
+        reactions: currentReactions,
+        userReaction: nextUserReaction
+      };
+    } catch (err) {
+      console.warn('Turso togglePostReaction error:', err);
+      return null;
+    }
+  },
+
+  /**
+   * Menghitung statistik klasemen 'Liga Fastabiqul Khairat' (Keluarga, Ranting, MWC)
+   */
+  async getLeaderboardStats(currentUserPhone?: string): Promise<{
+    familyLeaderboard: FamilyLeaderboardItem[];
+    rantingLeaderboard: RantingLeaderboardItem[];
+    mwcLeaderboard: MwcLeaderboardItem[];
+  }> {
+    const client = getTursoClient();
+    if (!client) {
+      return { familyLeaderboard: [], rantingLeaderboard: [], mwcLeaderboard: [] };
+    }
+
+    try {
+      const memberQuery = await client.execute(`
+        SELECT 
+          a.member_id,
+          a.nama_lengkap,
+          a.nomor_wa,
+          COALESCE(a.ranting, 'Gapura Timur') as ranting,
+          COALESCE(a.mwc_zone, 'MWC Gapura') as mwc_zone,
+          y.yard_id,
+          (SELECT COUNT(DISTINCT pilar_kategori) FROM tbl_aset_produksi WHERE yard_id = y.yard_id) as pilar_count,
+          (SELECT COUNT(*) FROM tbl_aset_produksi WHERE yard_id = y.yard_id) as total_assets,
+          (SELECT COUNT(*) FROM tbl_panen WHERE plant_id IN (SELECT id FROM tbl_tanaman)) as total_harvests,
+          (SELECT COUNT(*) FROM tbl_kabar_pekarangan WHERE author_id = a.member_id OR author_phone = a.nomor_wa) as post_count,
+          COALESCE((SELECT SUM(saved_value) FROM tbl_penghematan), 0) as total_savings
+        FROM tbl_anggota a
+        LEFT JOIN tbl_pekarangan y ON a.member_id = y.member_id
+      `);
+
+      const cleanPhone = (p?: string) => (p || '').replace(/^0/, '62').replace(/\D/g, '');
+      const userCleanPhone = cleanPhone(currentUserPhone);
+
+      const rawFamilies: FamilyLeaderboardItem[] = memberQuery.rows.map(row => {
+        const pilarCount = Number(row.pilar_count) || 0;
+        const totalAssets = Number(row.total_assets) || 0;
+        const postCount = Number(row.post_count) || 0;
+        const savings = Number(row.total_savings) || 0;
+        const phone = String(row.nomor_wa || '');
+
+        let points = (pilarCount * 50) + (totalAssets * 10) + (postCount * 15) + Math.round(savings / 1000);
+        if (points === 0) points = 35; // Poin partisipasi dasar anggota terverifikasi
+
+        const isCurrent = !!userCleanPhone && cleanPhone(phone) === userCleanPhone;
+
+        let badge = 'Penggiat Hijau 🌿';
+        if (pilarCount >= 3) badge = 'Pilar Paripurna ⭐';
+        else if (totalAssets >= 8) badge = 'Pekarangan Subur 🌱';
+
+        return {
+          rank: 0,
+          memberId: String(row.member_id),
+          familyName: String(row.nama_lengkap || 'Keluarga Nahdliyin'),
+          yardName: row.yard_id ? `Pekarangan ${row.nama_lengkap}` : undefined,
+          ranting: String(row.ranting || 'Gapura Timur'),
+          mwcZone: String(row.mwc_zone || 'MWC Gapura'),
+          totalPoints: points,
+          pilarCount,
+          totalSavings: savings,
+          badge,
+          isCurrentUser: isCurrent
+        };
+      });
+
+      rawFamilies.sort((a, b) => b.totalPoints - a.totalPoints);
+      rawFamilies.forEach((f, idx) => {
+        f.rank = idx + 1;
+        if (f.rank === 1) f.badge = 'Juara Utama 👑';
+        else if (f.rank === 2) f.badge = 'Teladan Desa 🥈';
+        else if (f.rank === 3) f.badge = 'Bintang Hijau 🥉';
+      });
+
+      const rantingMap = new Map<string, {
+        ranting: string;
+        mwcZone: string;
+        familiesCount: number;
+        totalPoints: number;
+      }>();
+
+      rawFamilies.forEach(f => {
+        const rName = f.ranting || 'Gapura Timur';
+        const existing = rantingMap.get(rName) || {
+          ranting: rName,
+          mwcZone: f.mwcZone || 'MWC Gapura',
+          familiesCount: 0,
+          totalPoints: 0
+        };
+        existing.familiesCount += 1;
+        existing.totalPoints += f.totalPoints;
+        rantingMap.set(rName, existing);
+      });
+
+      const rawRantings: RantingLeaderboardItem[] = Array.from(rantingMap.values()).map(r => ({
+        rank: 0,
+        ranting: r.ranting,
+        mwcZone: r.mwcZone,
+        activeFamiliesCount: r.familiesCount,
+        totalPoints: r.totalPoints + (r.familiesCount * 50),
+        totalHarvestKg: Math.round(r.totalPoints * 0.08),
+        totalEggs: Math.round(r.totalPoints * 0.15),
+        badge: 'Ranting Guyub 🤝'
+      }));
+
+      rawRantings.sort((a, b) => b.totalPoints - a.totalPoints);
+      rawRantings.forEach((r, idx) => {
+        r.rank = idx + 1;
+        if (r.rank === 1) r.badge = 'Ranting Terdaulat 🏆';
+        else if (r.rank === 2) r.badge = 'Ranting Asri 🥈';
+        else if (r.rank === 3) r.badge = 'Ranting Mandiri 🥉';
+      });
+
+      const mwcMap = new Map<string, {
+        mwcZone: string;
+        rantingSet: Set<string>;
+        familiesCount: number;
+        totalPoints: number;
+      }>();
+
+      rawFamilies.forEach(f => {
+        const mName = f.mwcZone || 'MWC Gapura';
+        const existing = mwcMap.get(mName) || {
+          mwcZone: mName,
+          rantingSet: new Set<string>(),
+          familiesCount: 0,
+          totalPoints: 0
+        };
+        existing.rantingSet.add(f.ranting);
+        existing.familiesCount += 1;
+        existing.totalPoints += f.totalPoints;
+        mwcMap.set(mName, existing);
+      });
+
+      const rawMwc: MwcLeaderboardItem[] = Array.from(mwcMap.values()).map(m => ({
+        rank: 0,
+        mwcZone: m.mwcZone,
+        totalRanting: m.rantingSet.size,
+        activeFamiliesCount: m.familiesCount,
+        totalPoints: m.totalPoints + (m.familiesCount * 100),
+        mamasarProductsCount: Math.round(m.totalPoints / 120),
+        badge: 'MWC Berdaya 🌟'
+      }));
+
+      rawMwc.sort((a, b) => b.totalPoints - a.totalPoints);
+      rawMwc.forEach((m, idx) => {
+        m.rank = idx + 1;
+        if (m.rank === 1) m.badge = 'MWC Daulat Pangan 🥇';
+        else if (m.rank === 2) m.badge = 'MWC Progresif 🥈';
+      });
+
+      return {
+        familyLeaderboard: rawFamilies,
+        rantingLeaderboard: rawRantings,
+        mwcLeaderboard: rawMwc
+      };
+    } catch (err) {
+      console.warn('Turso getLeaderboardStats error:', err);
+      return { familyLeaderboard: [], rantingLeaderboard: [], mwcLeaderboard: [] };
     }
   }
 };

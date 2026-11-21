@@ -142,3 +142,37 @@ CREATE TABLE IF NOT EXISTS tbl_master_options (
   extra TEXT,
   UNIQUE(category, value)
 );
+
+-- 10. POSTINGAN SOSIAL: APA KABAR PEKARANGANMU?
+CREATE TABLE IF NOT EXISTS tbl_kabar_pekarangan (
+  id TEXT PRIMARY KEY,
+  author_id TEXT NOT NULL,
+  author_name TEXT NOT NULL,
+  author_phone TEXT,
+  yard_name TEXT,
+  ranting TEXT,
+  mwc_zone TEXT,
+  category TEXT NOT NULL, -- 'panen', 'tanam', 'ternak', 'dapur', 'apotek', 'sedekah', 'rpp'
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  photo_url TEXT,
+  metric_badge TEXT,
+  reactions_data TEXT DEFAULT '{"berkah":0,"masyaallah":0,"seger":0,"semangat":0}',
+  is_mamasar_product INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_kabar_zone ON tbl_kabar_pekarangan(mwc_zone, ranting);
+CREATE INDEX IF NOT EXISTS idx_kabar_author ON tbl_kabar_pekarangan(author_id);
+
+-- 11. REAKSI DOA SOSIAL (BERKAH, MASYAALLAH, SEGER, SEMANGAT)
+CREATE TABLE IF NOT EXISTS tbl_kabar_reactions (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL REFERENCES tbl_kabar_pekarangan(id) ON DELETE CASCADE,
+  user_phone TEXT NOT NULL,
+  reaction_type TEXT NOT NULL, -- 'berkah', 'masyaallah', 'seger', 'semangat'
+  created_at TEXT DEFAULT (datetime('now', 'localtime')),
+  UNIQUE(post_id, user_phone)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reaction_post ON tbl_kabar_reactions(post_id);

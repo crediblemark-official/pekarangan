@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { PlantItem, LivestockItem, ActivityLogItem } from '../types';
+import type { PlantItem, LivestockItem, ActivityLogItem, CommunityPostItem, KabarCategory } from '../types';
 import { StorageService } from '../services/storage';
 import { ApiService } from '../services/api';
+import { TursoService, isTursoConfigured } from '../services/turso';
 import SearchableSelect, { type SelectOption } from './SearchableSelect.vue';
 
 const emit = defineEmits<{
@@ -22,7 +23,49 @@ const showLivestockModal = ref(false);
 const showHarvestModal = ref(false);
 const showUpdatePhaseModal = ref(false);
 const showQuickConsumeModal = ref(false);
+const showShareKabarModal = ref(false);
+const shareKabarData = ref<{
+  title: string;
+  content: string;
+  category: KabarCategory;
+  metricBadge: string;
+  isMamasarProduct: boolean;
+} | null>(null);
 const selectedPlant = ref<PlantItem | null>(null);
+
+const confirmShareKabar = () => {
+  if (!shareKabarData.value) return;
+  const authorName = settings.ownerName || settings.cadreName || 'Warga Nahdliyin';
+  const yardName = settings.yardName || 'Pekarangan Mandiri';
+  const ranting = settings.ranting || 'Gapura Timur';
+  const mwcZone = settings.mwcZone || 'MWC Gapura';
+
+  const newPost: CommunityPostItem = {
+    id: 'post-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    authorId: settings.phone || 'mbr-local',
+    authorName,
+    authorPhone: settings.phone,
+    yardName,
+    ranting,
+    mwcZone,
+    category: shareKabarData.value.category,
+    title: shareKabarData.value.title,
+    content: shareKabarData.value.content,
+    metricBadge: shareKabarData.value.metricBadge,
+    isMamasarProduct: shareKabarData.value.isMamasarProduct,
+    reactions: { berkah: 1, masyaallah: 0, seger: 0, semangat: 0 },
+    userReaction: 'berkah',
+    createdAt: new Date().toISOString()
+  };
+
+  StorageService.addCommunityPost(newPost);
+  if (isTursoConfigured() && navigator.onLine) {
+    TursoService.createCommunityPost(newPost).catch(() => {});
+  }
+
+  showShareKabarModal.value = false;
+  emit('showToast', 'Alhamdulillah! Kabar pekarangan telah dibagikan ke komunitas warga.', 'success');
+};
 
 // Database Reactive State
 const activePlants = ref<PlantItem[]>(StorageService.getPlants());
@@ -273,6 +316,15 @@ const saveEggLog = () => {
 
   showEggModal.value = false;
   emit('showToast', `Berhasil mencatat +${count} telur untuk ${live.name} (Total hari ini: ${live.todayYield})`);
+
+  shareKabarData.value = {
+    title: `Pungut ${count} Butir Telur Segar 🥚`,
+    content: `Alhamdulillah produksi telur hari ini bertambah +${count} butir dari kandang ${live.name}. Total hari ini terkumpul ${live.todayYield} butir untuk kebutuhan keluarga!`,
+    category: 'ternak',
+    metricBadge: `🥚 ${count} Butir`,
+    isMamasarProduct: false
+  };
+  showShareKabarModal.value = true;
 };
 
 // Aksi Catat Panen
@@ -346,6 +398,15 @@ const saveHarvest = () => {
 
   showHarvestModal.value = false;
   emit('showToast', `Panen ${plantName} (${harvestForm.value.qty}) senilai Rp ${val.toLocaleString()} berhasil dicatat!`);
+
+  shareKabarData.value = {
+    title: `Alhamdulillah Panen ${plantName}!`,
+    content: `Alhamdulillah hasil panen ${plantName} (${harvestForm.value.qty}) dipetik hari ini. ${allocationNotes[harvestForm.value.allocation] || ''}`,
+    category: 'panen',
+    metricBadge: `🌾 ${harvestForm.value.qty}`,
+    isMamasarProduct: harvestForm.value.allocation === 'olahan_rpp'
+  };
+  showShareKabarModal.value = true;
 };
 
 // Aksi Update Fase Tanam
@@ -1060,6 +1121,38 @@ const saveQuickConsume = () => {
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn btn-outline btn-full" @click="showQuickConsumeModal = false">Batal</button>
           <button type="button" class="btn btn-primary btn-full" @click="saveQuickConsume">Catat Penghematan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: TAWURAN KABARKAN PANEN KE KOMUNITAS -->
+    <div v-if="showShareKabarModal && shareKabarData" class="modal-backdrop" @click.self="showShareKabarModal = false">
+      <div class="modal-sheet" style="text-align: center;">
+        <div style="font-size: 2.4rem; margin-bottom: 6px;">🎉</div>
+        <h3 style="font-size: 1rem; font-weight: 800; color: #166534; margin-bottom: 4px;">
+          Catatan Berhasil Disimpan!
+        </h3>
+        <p style="font-size: 0.8rem; color: #475569; margin-bottom: 14px; line-height: 1.4;">
+          Mau kabarkan hasil ini ke <strong>"Apa Kabar Pekaranganmu?"</strong> untuk pamer kebaikan & menambah poin Fastabiqul Khairat keluarga Anda?
+        </p>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: left; margin-bottom: 14px;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #1e293b;">{{ shareKabarData.title }}</div>
+          <div style="font-size: 0.74rem; color: #64748b; margin-top: 2px;">{{ shareKabarData.content }}</div>
+          <div style="margin-top: 6px;">
+            <span style="font-size: 0.68rem; background: #ecfdf5; color: #065f46; font-weight: 800; padding: 2px 6px; border-radius: 4px;">
+              {{ shareKabarData.metricBadge }}
+            </span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-outline btn-full" @click="showShareKabarModal = false">
+            Nanti Saja
+          </button>
+          <button type="button" class="btn btn-primary btn-full" style="background: #16a34a; border-color: #16a34a;" @click="confirmShareKabar">
+            📢 Bagikan Sekarang
+          </button>
         </div>
       </div>
     </div>

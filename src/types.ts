@@ -213,3 +213,72 @@ export interface MasterOptions {
   jenis_makan: string[];
   media_tanam: string[];
 }
+
+/**
+ * ============================================================================
+ * APA KABAR PEKARANGANMU & LIGA FASTABIQUL KHAIRAT (SOSIAL & KOMPETISI)
+ * ============================================================================
+ */
+
+export type KabarCategory = 'panen' | 'tanam' | 'ternak' | 'dapur' | 'apotek' | 'sedekah' | 'rpp';
+
+export interface KabarReactions {
+  berkah: number;     // 🤲 Berkah!
+  masyaallah: number; // 💚 MasyaAllah
+  seger: number;      // 🥬 Seger Rek!
+  semangat: number;   // 🔥 Semangat!
+}
+
+export interface CommunityPostItem {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorPhone?: string;
+  yardName?: string;
+  ranting: string;
+  mwcZone: string;
+  category: KabarCategory;
+  title: string;
+  content: string;
+  photoUrl?: string;
+  metricBadge?: string; // e.g. "🌾 Panen 3.5 kg" atau "🥚 15 Butir"
+  reactions: KabarReactions;
+  userReaction?: 'berkah' | 'masyaallah' | 'seger' | 'semangat' | null;
+  createdAt: string;
+  isMamasarProduct?: boolean;
+}
+
+export interface FamilyLeaderboardItem {
+  rank: number;
+  memberId: string;
+  familyName: string;
+  yardName?: string;
+  ranting: string;
+  mwcZone: string;
+  totalPoints: number;
+  pilarCount: number;
+  totalSavings: number;
+  badge: string; // e.g. "Juara Ranting 👑" / "Pendekar Hijau 🌿"
+  isCurrentUser?: boolean;
+}
+
+export interface RantingLeaderboardItem {
+  rank: number;
+  ranting: string;
+  mwcZone: string;
+  activeFamiliesCount: number;
+  totalPoints: number;
+  totalHarvestKg: number;
+  totalEggs: number;
+  badge: string;
+}
+
+export interface MwcLeaderboardItem {
+  rank: number;
+  mwcZone: string;
+  totalRanting: number;
+  activeFamiliesCount: number;
+  totalPoints: number;
+  mamasarProductsCount: number;
+  badge: string;
+}

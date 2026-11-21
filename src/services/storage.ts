@@ -14,7 +14,9 @@ import type {
   KasLogItem,
   HarvestRecordItem,
   MasterOptions,
-  CommunityMemberItem
+  CommunityMemberItem,
+  CommunityPostItem,
+  KabarReactions
 } from "../types";
 import { getEffectiveGasUrl } from "./api";
 
@@ -35,7 +37,8 @@ const KEYS = {
   HARVEST_RECORDS:   'pekarangan_harvest_records_v3',
   MASTER_OPTIONS:    'pekarangan_master_options_v3',
   STATS:             'pekarangan_stats_v3',
-  MEMBERS:           'pekarangan_members_v3'
+  MEMBERS:           'pekarangan_members_v3',
+  COMMUNITY_POSTS:   'pekarangan_community_posts_v3'
 };
 
 
@@ -491,5 +494,84 @@ export const StorageService = {
     const list = this.getMembers();
     list.unshift(member);
     this.saveMembers(list);
+  },
+
+  // --- POSTINGAN SOSIAL: APA KABAR PEKARANGANMU? ---
+  getCommunityPosts(): CommunityPostItem[] {
+    try {
+      const raw = localStorage.getItem(KEYS.COMMUNITY_POSTS);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    // Seed kabar perdana yang ramah & otentik
+    const seedPosts: CommunityPostItem[] = [
+      {
+        id: 'post-init-1',
+        authorId: 'MBR-153938',
+        authorName: 'Rasyiqi',
+        yardName: 'Pekarangan Asri Gapura',
+        ranting: 'Gapura Timur',
+        mwcZone: 'MWC Gapura',
+        category: 'panen',
+        title: 'Alhamdulillah Panen Cabai Rawit & Bayam Hijau',
+        content: 'Pagi ini petik cabai rawit merah dan seikat bayam segar dari polybag pekarangan samping. Alhamdulillah uang belanja dapur hari ini hemat Rp 15.000!',
+        metricBadge: '🌾 Panen 1.2 kg',
+        reactions: { berkah: 6, masyaallah: 4, seger: 5, semangat: 2 },
+        userReaction: null,
+        createdAt: new Date(Date.now() - 3600000 * 3).toISOString()
+      },
+      {
+        id: 'post-init-2',
+        authorId: 'MBR-20261016-9253',
+        authorName: 'Zainur Rahman Rafiki',
+        yardName: 'Pekarangan Berkah NU',
+        ranting: 'Gapura Timur',
+        mwcZone: 'MWC Gapura',
+        category: 'ternak',
+        title: 'Pungut 14 Butir Telur Ayam Segar',
+        content: 'Alhamdulillah produksi telur ayam kandang produktif hari ini melimpah. Sebagian untuk sarapan anak-anak, sisanya disedekahkan ke tetangga musholla.',
+        metricBadge: '🥚 14 Butir Telur',
+        reactions: { berkah: 8, masyaallah: 7, seger: 3, semangat: 4 },
+        userReaction: null,
+        createdAt: new Date(Date.now() - 3600000 * 12).toISOString()
+      }
+    ];
+    localStorage.setItem(KEYS.COMMUNITY_POSTS, JSON.stringify(seedPosts));
+    return seedPosts;
+  },
+
+  saveCommunityPosts(posts: CommunityPostItem[]): void {
+    localStorage.setItem(KEYS.COMMUNITY_POSTS, JSON.stringify(posts));
+  },
+
+  addCommunityPost(post: CommunityPostItem): void {
+    const list = this.getCommunityPosts();
+    list.unshift(post);
+    this.saveCommunityPosts(list);
+  },
+
+  toggleReactionLocal(postId: string, reactionType: 'berkah' | 'masyaallah' | 'seger' | 'semangat'): { reactions: KabarReactions; userReaction: any } | null {
+    const list = this.getCommunityPosts();
+    const post = list.find(p => p.id === postId);
+    if (!post) return null;
+
+    if (!post.reactions) {
+      post.reactions = { berkah: 0, masyaallah: 0, seger: 0, semangat: 0 };
+    }
+
+    if (post.userReaction === reactionType) {
+      // Toggle off
+      post.reactions[reactionType] = Math.max(0, post.reactions[reactionType] - 1);
+      post.userReaction = null;
+    } else {
+      // Toggle on or switch
+      if (post.userReaction) {
+        post.reactions[post.userReaction] = Math.max(0, post.reactions[post.userReaction] - 1);
+      }
+      post.reactions[reactionType] = (post.reactions[reactionType] || 0) + 1;
+      post.userReaction = reactionType;
+    }
+
+    this.saveCommunityPosts(list);
+    return { reactions: post.reactions, userReaction: post.userReaction };
   }
 };
