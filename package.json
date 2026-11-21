@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync",
     "build:apk": "npm run build && npx cap sync && cd android && ./gradlew assembleDebug",
-    "android": "npx cap open android"
+    "android": "npx cap open android",
+    "deploy:pages": "npm run build && npx wrangler pages deploy dist --project-name=pekarangan --branch=main"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
