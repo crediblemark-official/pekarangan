@@ -226,6 +226,24 @@ const submitForm = async () => {
   try {
     const res = await ApiService.submitSurvey(GAS_URL, payload);
     StorageService.incrementRecordedMembersCount();
+
+    // Sinkronkan ke Mamasar jika ada produk olahan RPP
+    const hasRpp = payload.assets_data.some(a => 
+      a.pilar_kategori.includes('Rumah Produksi') || 
+      a.pilar_kategori.includes('RPP') || 
+      a.publish_to_mamasar
+    );
+    if (hasRpp) {
+      ApiService.syncToMamasar({
+        member_data: payload.member_data,
+        assets_data: payload.assets_data
+      }).then(mRes => {
+        if (mRes.success) {
+          showToast('Produk surplus RPP berhasil disinkronkan ke Mamasar! 🏪', 'success');
+        }
+      }).catch(() => {});
+    }
+
     showToast(`Sukses! Member ID: ${res.member_id}`);
     resetForm();
     currentStep.value = 1;
@@ -252,6 +270,19 @@ const processSyncItem = async (item: SyncQueueItem) => {
   if (type === 'survey') {
     await ApiService.submitSurvey(GAS_URL, item.payload);
     StorageService.incrementRecordedMembersCount();
+    if (item.payload?.assets_data) {
+      const hasRpp = item.payload.assets_data.some((a: any) => 
+        (a.pilar_kategori || '').includes('Rumah Produksi') || 
+        (a.pilar_kategori || '').includes('RPP') || 
+        a.publish_to_mamasar
+      );
+      if (hasRpp) {
+        await ApiService.syncToMamasar({
+          member_data: item.payload.member_data,
+          assets_data: item.payload.assets_data
+        }).catch(() => {});
+      }
+    }
   } else if (type === 'register_account' || item.payload?.action === 'register_account') {
     await ApiService.registerAccount(GAS_URL, item.payload.account || item.payload);
   } else if (type === 'plant') {

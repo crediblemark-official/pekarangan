@@ -4,7 +4,7 @@
  * ============================================================================
  */
 
-import type { SurveyPayload, PlantItem, LivestockItem } from "../types";
+import type { SurveyPayload, PlantItem, LivestockItem, MemberData, AssetItem } from "../types";
 
 export interface ApiResponse {
   status: "success" | "error";
@@ -25,6 +25,14 @@ export interface ApiResponse {
 export function getEffectiveGasUrl(): string {
   const envUrl = (import.meta.env.VITE_GAS_URL as string) || '';
   return envUrl.trim();
+}
+
+export function getEffectiveMamasarUrl(): string {
+  const envUrl = (import.meta.env.VITE_MAMASAR_URL as string) || '';
+  if (envUrl.trim()) return envUrl.trim();
+  return typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? 'http://localhost:4321/api/pekarangan/sync'
+    : 'https://mamasar.com/api/pekarangan/sync';
 }
 
 export const ApiService = {
@@ -232,5 +240,52 @@ export const ApiService = {
       value,
       extra
     });
+  },
+
+  /**
+   * Mengirim produk olahan surplus Pilar 4 (RPP) ke Mamasar
+   */
+  async syncToMamasar(payload: {
+    member_data: MemberData;
+    assets_data: AssetItem[];
+  }, customUrl?: string): Promise<{ success: boolean; message: string; data?: any }> {
+    const url = customUrl || getEffectiveMamasarUrl();
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nama_lengkap: payload.member_data.nama_lengkap,
+          nama_panggilan: payload.member_data.nama_panggilan,
+          nomor_wa: payload.member_data.nomor_wa,
+          mwc_zone: payload.member_data.mwc_zone,
+          ranting: payload.member_data.ranting,
+          rt_rw: payload.member_data.rt_rw,
+          alamat_catatan: payload.member_data.alamat_catatan,
+          assets: payload.assets_data.map(a => ({
+            pilar_kategori: a.pilar_kategori,
+            nama_komoditas: a.nama_komoditas,
+            jumlah_estimasi: a.jumlah_estimasi,
+            media_tanam: a.media_tanam,
+            catatan_produksi: a.catatan_produksi,
+            publish_to_mamasar: a.publish_to_mamasar
+          }))
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (err: any) {
+      console.warn("Gagal sinkronisasi ke Mamasar:", err);
+      return {
+        success: false,
+        message: err.message || "Gagal menghubungi server Mamasar"
+      };
+    }
   }
 };

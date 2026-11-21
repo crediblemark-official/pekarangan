@@ -64,9 +64,21 @@ defineEmits<{
         {{ feature.whyLocked }}
       </div>
 
-      <!-- CTA Buttons: Vote & WhatsApp Share -->
+      <!-- CTA Buttons: Vote & WhatsApp Share & Mamasar Direct Link -->
       <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+        <a 
+          v-if="feature.id === 'pasar_mamasar'"
+          href="https://mamasar.com" 
+          target="_blank" 
+          class="btn"
+          style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(135deg, #15803d, #166534); color: #fff; font-weight: 700; padding: 10px;"
+        >
+          <span>🏪</span>
+          <span>Buka Direktori UMKM Mamasar</span>
+        </a>
+
         <button 
+          v-else
           type="button" 
           :class="['btn', isVoted ? 'btn-outline' : 'btn-primary']"
           @click="$emit('toggleVote', feature.id)"
