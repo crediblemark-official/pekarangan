@@ -239,7 +239,7 @@ onMounted(() => {
     <!-- ===================================================================== -->
     <!-- VIEW 1: APA KABAR PEKARANGANMU? (FEED SOSIAL)                         -->
     <!-- ===================================================================== -->
-    <div v-if="activeSubTab === 'kabar'" class="subtab-content">
+    <div v-if="activeSubTab === 'kabar'" class="subtab-content subtab-content-kabar">
       <!-- Kategori Filter Chips -->
       <div class="category-chips-scroll">
         <button 
@@ -260,12 +260,12 @@ onMounted(() => {
         Memperbarui kabar pekarangan dari warga...
       </div>
 
-      <!-- Feed List -->
+      <!-- Feed List - Full Edge Stream -->
       <div class="feed-stream">
-        <div 
+        <article 
           v-for="post in filteredPosts" 
           :key="post.id" 
-          class="feed-card card"
+          class="feed-card"
         >
           <!-- Post Header -->
           <div class="feed-header">
@@ -293,18 +293,20 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Post Content -->
-          <div class="feed-body">
-            <h4 class="feed-title">{{ post.title }}</h4>
-            <p class="feed-text">{{ post.content }}</p>
+          <!-- Post Content / Caption (Clean duplicate prevention) -->
+          <div v-if="post.content || post.title" class="feed-caption-box">
+            <h4 v-if="post.title && post.title.trim() !== post.content.trim()" class="feed-title">{{ post.title }}</h4>
+            <p class="feed-text">{{ post.content || post.title }}</p>
+          </div>
 
-            <!-- Foto Lampiran -->
-            <div v-if="post.photoUrl" class="feed-photo-box">
-              <img :src="post.photoUrl" alt="Foto Pekarangan" class="feed-photo-img" />
-            </div>
+          <!-- Foto Lampiran - TRUE FULL EDGE -->
+          <div v-if="post.photoUrl" class="feed-photo-box">
+            <img :src="post.photoUrl" alt="Foto Pekarangan" class="feed-photo-img" loading="lazy" />
+          </div>
 
-            <!-- Badge Integrasi Mamasar -->
-            <div v-if="post.isMamasarProduct" class="mamasar-feed-tag">
+          <!-- Badge Integrasi Mamasar -->
+          <div v-if="post.isMamasarProduct" class="mamasar-feed-wrap">
+            <div class="mamasar-feed-tag">
               <AppIcon name="package" size="xs" class="text-blue-700" />
               <span>Produk Olahan RPP • Mamasar</span>
             </div>
@@ -369,7 +371,7 @@ onMounted(() => {
               <span>Sapa</span>
             </button>
           </div>
-        </div>
+        </article>
 
         <!-- Empty Feed -->
         <div v-if="filteredPosts.length === 0 && !loadingPosts" class="empty-state card">
@@ -881,17 +883,30 @@ onMounted(() => {
   padding: 12px 14px;
 }
 
+.subtab-content-kabar {
+  padding: 0;
+  background: var(--bg-surface, #ffffff);
+}
+
 /* CATEGORY CHIPS SCROLL */
 .category-chips-scroll {
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
+  padding: 10px 14px 8px 14px;
+  margin-bottom: 0;
   scrollbar-width: none;
+  background: var(--bg-surface, #ffffff);
+  border-bottom: 1px solid #f1f5f9;
 }
 .category-chips-scroll::-webkit-scrollbar {
   display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .category-chips-scroll {
+    border-bottom-color: #1e293b;
+  }
 }
 
 .cat-chip {
@@ -916,24 +931,45 @@ onMounted(() => {
   color: #ffffff;
 }
 
-/* FEED STREAM */
+/* FEED STREAM - FULL EDGE */
 .feed-stream {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+  width: 100%;
+  background: #f8fafc;
+}
+
+@media (prefers-color-scheme: dark) {
+  .feed-stream {
+    background: #0b1120;
+  }
 }
 
 .feed-card {
-  padding: 12px 14px;
-  border: 1px solid var(--border, #e5e7eb);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: #ffffff;
+  border-bottom: 8px solid #f1f5f9;
+  box-shadow: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .feed-card {
+    background: #0f172a;
+    border-bottom: 8px solid #0b1120;
+  }
 }
 
 .feed-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  padding: 12px 14px 8px 14px;
+  margin-bottom: 0;
 }
 
 .feed-avatar {
@@ -1000,32 +1036,61 @@ onMounted(() => {
   white-space: nowrap;
 }
 
+.feed-caption-box {
+  padding: 0 14px 10px 14px;
+}
+
 .feed-title {
   font-size: 0.88rem;
   font-weight: 700;
   color: #0f172a;
-  margin: 0 0 4px;
+  margin: 0 0 3px;
+  line-height: 1.35;
+}
+
+@media (prefers-color-scheme: dark) {
+  .feed-title {
+    color: #f1f5f9;
+  }
 }
 
 .feed-text {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: #334155;
-  line-height: 1.4;
-  margin: 0 0 8px;
+  line-height: 1.45;
+  margin: 0;
+  word-break: break-word;
 }
 
+@media (prefers-color-scheme: dark) {
+  .feed-text {
+    color: #cbd5e1;
+  }
+}
+
+/* PHOTO BOX - TRUE FULL EDGE BLEED */
 .feed-photo-box {
-  margin-bottom: 8px;
-  border-radius: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  background: #020617;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  position: relative;
+  max-height: 560px;
 }
 
 .feed-photo-img {
   width: 100%;
-  max-height: 240px;
+  height: auto;
+  max-height: 560px;
   object-fit: cover;
   display: block;
+}
+
+.mamasar-feed-wrap {
+  padding: 8px 14px 0 14px;
 }
 
 .mamasar-feed-tag {
@@ -1039,15 +1104,15 @@ onMounted(() => {
   border: 1px solid #bfdbfe;
   padding: 2px 8px;
   border-radius: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 0;
 }
 
 .feed-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid #f1f5f9;
-  padding-top: 8px;
+  padding: 10px 14px 12px 14px;
+  border-top: none;
   gap: 8px;
 }
 

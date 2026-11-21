@@ -723,23 +723,23 @@ onBeforeUnmount(() => {
 
 .preview-box {
   position: relative;
-  margin: 10px 0;
-  border-radius: 12px;
+  margin: 10px -16px 12px;
+  border-radius: 0;
   overflow: hidden;
   background: #090d16;
-  border: 1px solid #e2e8f0;
-  max-height: 200px;
+  border: none;
+  max-height: 360px;
 }
 
 @media (prefers-color-scheme: dark) {
   .preview-box {
-    border-color: #334155;
+    border-color: transparent;
   }
 }
 
 .preview-img {
   width: 100%;
-  max-height: 200px;
+  max-height: 360px;
   object-fit: cover;
   display: block;
 }
