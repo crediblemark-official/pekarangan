@@ -16,7 +16,6 @@ const deviceId = SecurityService.getDeviceId();
 const isSubmitting = ref(false);
 const isCheckingAccount = ref(false);
 const foundAccount = ref<any | null>(null);
-const isOtherDeviceActive = ref(false);
 
 const form = reactive({
   ownerName: currentSettings.ownerName || '',
@@ -45,7 +44,6 @@ watch(() => form.phone, (newVal) => {
     }, 500);
   } else {
     foundAccount.value = null;
-    isOtherDeviceActive.value = false;
   }
 });
 
@@ -65,14 +63,12 @@ const checkExistingAccount = async () => {
     });
     if (res.status === 'success' && res.found && res.member) {
       foundAccount.value = res.member;
-      isOtherDeviceActive.value = !!res.isOtherDeviceActive;
       // Auto-fill nama dengan data yang ditemukan di database cloud
       if (res.member.nama_lengkap) {
         form.ownerName = res.member.nama_lengkap;
       }
     } else {
       foundAccount.value = null;
-      isOtherDeviceActive.value = false;
     }
   } catch (err: any) {
     console.warn('Gagal periksa akun:', err);
@@ -135,8 +131,7 @@ const submitIdentity = async () => {
     nomor_wa: form.phone.trim(),
     rt_rw: foundAccount.value?.rt_rw || currentSettings.defaultRtRw || '-',
     alamat_catatan: foundAccount.value?.alamat_catatan || '-',
-    device_id: deviceId,
-    force_takeover: isOtherDeviceActive.value
+    device_id: deviceId
   };
 
   const gasUrl = getEffectiveGasUrl();
@@ -187,23 +182,18 @@ const submitIdentity = async () => {
       </header>
 
       <!-- Account Recovery Banner (Jika Akun Ditemukan di Cloud) -->
+      <!-- Akun Ditemukan Banner -->
       <div 
         v-if="foundAccount" 
         class="found-banner"
-        :class="{ 'banner-warning': isOtherDeviceActive }"
       >
-        <div class="found-icon">{{ isOtherDeviceActive ? '⚠️' : '📲' }}</div>
+        <div class="found-icon">📲</div>
         <div class="found-info">
           <div class="found-title">
-            {{ isOtherDeviceActive ? 'Akun Aktif di HP Lain (Ganti HP)' : 'Akun Ditemukan!' }}
+            Akun Terdaftar Ditemukan!
           </div>
           <div class="found-desc">
-            <template v-if="isOtherDeviceActive">
-              Akun atas nama <strong>{{ foundAccount.nama_lengkap }}</strong> sedang aktif di HP lain. Tekan tombol di bawah untuk memindahkan sesi ke HP ini (HP lama otomatis logout).
-            </template>
-            <template v-else>
-              Nomor ini terdaftar atas nama <strong>{{ foundAccount.nama_lengkap }}</strong>. Klik tombol di bawah untuk memulihkan akun ke HP ini.
-            </template>
+            Nomor ini terdaftar atas nama <strong>{{ foundAccount.nama_lengkap }}</strong>. Klik tombol di bawah untuk menyinkronkan data pekarangan warga.
           </div>
         </div>
       </div>
@@ -292,12 +282,10 @@ const submitIdentity = async () => {
           <button 
             type="submit" 
             class="submit-btn" 
-            :class="{ 'btn-takeover': isOtherDeviceActive }"
             :disabled="!isValid || isSubmitting"
           >
             <span v-if="isSubmitting">Menyimpan Akun... ⏳</span>
-            <span v-else-if="foundAccount && isOtherDeviceActive">Pindahkan Sesi ke HP Ini 📲</span>
-            <span v-else-if="foundAccount">Pulihkan Akun ke HP Ini 📲</span>
+            <span v-else-if="foundAccount">Gunakan Akun Ini 📲</span>
             <span v-else>Mulai Pekarangan Saya 🚀</span>
           </button>
           <p v-if="!isValid" class="validation-warning">

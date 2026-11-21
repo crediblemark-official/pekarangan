@@ -138,28 +138,6 @@ export interface SyncQueueItem {
   payload: any;
 }
 
-export interface TeaserFeature {
-  id: string;
-  title: string;
-  tagline: string;
-  icon: string;
-  tag: string;
-  isLocked: boolean;
-  currentCount: number;
-  targetCount: number;
-  targetUnit: string;
-  points: string[];
-  whyLocked: string;
-  shareMessage: string;
-}
-
-export interface SedekahLog {
-  id: string;
-  title: string;
-  date: string;
-  note: string;
-}
-
 export interface PlantItem {
   id: string;
   name: string;

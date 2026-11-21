@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type AppNavTab = 'home' | 'community' | 'record' | 'insight' | 'profile';
+export type AppNavTab = 'home' | 'record' | 'community' | 'profile';
 
 const props = defineProps<{
   activeTab: AppNavTab;
@@ -30,7 +30,7 @@ const handleCenterClick = () => {
 
 <template>
   <nav class="app-bottom-nav">
-    <!-- 1. Home -->
+    <!-- 1. Home / Beranda -->
     <button 
       type="button" 
       class="nav-btn" 
@@ -38,21 +38,10 @@ const handleCenterClick = () => {
       @click="$emit('changeTab', 'home')"
     >
       <span class="nav-icon">🏡</span>
-      <span class="nav-label">Home</span>
+      <span class="nav-label">Beranda</span>
     </button>
 
-    <!-- 2. Community -->
-    <button 
-      type="button" 
-      class="nav-btn" 
-      :class="{ active: activeTab === 'community' && !isSurveyMode }"
-      @click="$emit('changeTab', 'community')"
-    >
-      <span class="nav-icon">👥</span>
-      <span class="nav-label">Community</span>
-    </button>
-
-    <!-- 3. Catat (Center Accent Button: Catat OR Lanjut/Simpan when in Survey mode) -->
+    <!-- 2. Catat (Aksen Utama: Catat OR Lanjut/Simpan saat mode survei) -->
     <button 
       type="button" 
       class="nav-btn nav-primary-accent" 
@@ -78,18 +67,18 @@ const handleCenterClick = () => {
       </template>
     </button>
 
-    <!-- 4. Insight (Kas, Tabungan, & Statistik Produksi) -->
+    <!-- 3. Community / Komunitas Warga -->
     <button 
       type="button" 
       class="nav-btn" 
-      :class="{ active: activeTab === 'insight' && !isSurveyMode }"
-      @click="$emit('changeTab', 'insight')"
+      :class="{ active: activeTab === 'community' && !isSurveyMode }"
+      @click="$emit('changeTab', 'community')"
     >
-      <span class="nav-icon">📊</span>
-      <span class="nav-label">Insight</span>
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">Komunitas</span>
     </button>
 
-    <!-- 5. Profile -->
+    <!-- 4. Profile / Profil & Database -->
     <button 
       type="button" 
       class="nav-btn" 
@@ -97,8 +86,7 @@ const handleCenterClick = () => {
       @click="$emit('changeTab', 'profile')"
     >
       <span class="nav-icon">👤</span>
-      <span class="nav-label">Profile</span>
+      <span class="nav-label">Profil</span>
     </button>
   </nav>
 </template>
-

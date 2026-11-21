@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue';
-import type { MemberData, YardData, AssetItem, SurveyPayload, SyncQueueItem, SedekahLog } from './types';
+import type { MemberData, YardData, AssetItem, SurveyPayload, SyncQueueItem } from './types';
 import { GeoService, type GeoLocationResult } from './services/geo';
 import { CameraService, type CompressionResult } from './services/camera';
 import { StorageService } from './services/storage';
@@ -11,7 +11,6 @@ import AppBottomNav, { type AppNavTab } from './components/AppBottomNav.vue';
 import HomeDashboard from './components/HomeDashboard.vue';
 import CommunityHub from './components/CommunityHub.vue';
 import RecordHub from './components/RecordHub.vue';
-import SavingsKasMockup from './components/SavingsKasMockup.vue';
 import ProfileView from './components/ProfileView.vue';
 import OnboardingSetup from './components/OnboardingSetup.vue';
 import { SecurityService } from './services/security';
@@ -42,7 +41,6 @@ const currentNavTitle = computed(() => {
   switch (activeNavTab.value) {
     case 'community': return '👥 Direktori Komunitas';
     case 'record': return '📝 Pusat Pencatatan';
-    case 'insight': return '📊 Insight Penghematan';
     case 'profile': return '👤 Identitas Pekarangan';
     default: return 'Pekarangan';
   }
@@ -58,14 +56,6 @@ const isCameraLoading = ref(false);
 
 // Modals State
 const showQueueModal = ref(false);
-
-// Sedekah Logs — shared state antara RecordHub (catat panen) dan SavingsKasMockup (tampilkan)
-const sedekahLogs = ref<SedekahLog[]>([]);
-
-
-const addSedekahLog = (log: SedekahLog) => {
-  sedekahLogs.value.unshift(log);
-};
 
 // Google Apps Script Web App URL from environment
 const GAS_URL = getEffectiveGasUrl();
@@ -536,12 +526,11 @@ onMounted(() => {
         @go-to-profile="activeNavTab = 'profile'"
       />
 
-      <!-- 3. CATAT (PUSAT PENCATATAN PEKARANGAN) -->
+      <!-- 2. CATAT (PUSAT PENCATATAN PEKARANGAN) -->
       <RecordHub 
         v-if="activeNavTab === 'record'"
         @open-survey="activeNavTab = 'survey'"
         @show-toast="showToast"
-        @add-sedekah="addSedekahLog"
       />
 
       <!-- SURVEY / PENDATAAN (FASE 1) -->
@@ -579,14 +568,7 @@ onMounted(() => {
         />
       </div>
 
-      <!-- 4. INSIGHT (TABUNGAN POIN & LOG PENGHEMATAN) -->
-      <SavingsKasMockup 
-        v-if="activeNavTab === 'insight'"
-        :sedekah-logs="sedekahLogs"
-        @show-toast="showToast"
-      />
-
-      <!-- 5. PROFILE (PROFIL & PENGATURAN) -->
+      <!-- 4. PROFILE (PROFIL & PENGATURAN) -->
       <ProfileView 
         v-if="activeNavTab === 'profile'"
         @show-toast="showToast"

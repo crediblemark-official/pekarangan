@@ -8,7 +8,6 @@ import SearchableSelect, { type SelectOption } from './SearchableSelect.vue';
 const emit = defineEmits<{
   (e: 'openSurvey'): void;
   (e: 'showToast', message: string, type?: 'success' | 'error' | 'warning'): void;
-  (e: 'addSedekah', log: { id: string; title: string; date: string; note: string }): void;
 }>();
 
 const settings = StorageService.getSettings();
@@ -108,7 +107,7 @@ const harvestForm = ref({
   qty: '',
   unit: 'Gram / Ikat',
   estimatedValue: 20000,
-  allocation: 'konsumsi' as 'konsumsi' | 'sedekah' | 'barter' | 'olahan_rpp' | 'jual_surplus'
+  allocation: 'konsumsi' as 'konsumsi' | 'sedekah' | 'olahan_rpp'
 });
 
 // Aksi Tambah Tanam Baru (Dengan HST Dinamis)
@@ -310,11 +309,9 @@ const saveHarvest = () => {
   StorageService.addHarvestRecord(harvestRecord);
 
   const allocationNotes: Record<string, string> = {
-    konsumsi: 'Dikonsumsi mandiri keluarga (menghemat pengeluaran belanja)',
-    sedekah: 'Disedekahkan ke tetangga / warga yang membutuhkan',
-    barter: 'Surplus ditawarkan ke Bursa Barter Tetangga',
-    olahan_rpp: 'Surplus diselamatkan ke Rumah Produksi Pekarangan (RPP) untuk diolah',
-    jual_surplus: 'Surplus segar dijual ke tetangga / pasokan konsumsi acara NU'
+    konsumsi: 'Dikonsumsi mandiri keluarga (menghemat belanja dapur)',
+    sedekah: 'Disedekahkan ke tetangga / kerabat yang membutuhkan',
+    olahan_rpp: 'Diolah di Rumah Produksi Pekarangan (RPP) ➔ Dipasarkan ke Mamasar'
   };
 
   const log: ActivityLogItem = {
@@ -322,7 +319,7 @@ const saveHarvest = () => {
     title: `Panen ${plantName} (${harvestForm.value.qty})`,
     type: 'panen',
     date: 'Baru saja',
-    note: `${allocationNotes[harvestForm.value.allocation]} • Nilai pasar: Rp ${val.toLocaleString()}`,
+    note: `${allocationNotes[harvestForm.value.allocation] || 'Hasil Panen'} • Nilai pasar: Rp ${val.toLocaleString()}`,
     value: val
   };
 
@@ -344,15 +341,6 @@ const saveHarvest = () => {
   } else {
     ApiService.logHarvest(settings.gasUrl, harvestPayload).catch(() => {
       StorageService.addToSyncQueue(harvestPayload, 'harvest', `✂️ Panen: ${plantName} (${harvestForm.value.qty})`);
-    });
-  }
-
-  if (harvestForm.value.allocation === 'sedekah' && selectedPlant.value) {
-    emit('addSedekah', {
-      id: 's' + Date.now(),
-      title: `${selectedPlant.value.icon || '🌿'} ${harvestForm.value.qty} ${selectedPlant.value.name}`,
-      date: dateStr,
-      note: `Disedekahkan dari hasil panen pekarangan ${selectedPlant.value.location}.`
     });
   }
 
@@ -945,10 +933,8 @@ const saveQuickConsume = () => {
           <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
             <label v-for="opt in [
               { val: 'konsumsi', icon: '🍽️', label: 'Konsumsi Mandiri Keluarga', sub: 'Makan sendiri & hemat belanja dapur' },
-              { val: 'olahan_rpp', icon: '🍯', label: 'Diolah di RPP (Pilar 4)', sub: 'Diselamatkan jadi sambal kemasan, keripik, jamu' },
               { val: 'sedekah',  icon: '❤️', label: 'Sedekah ke Tetangga', sub: 'Berbagi ke kerabat / tetangga yang membutuhkan' },
-              { val: 'barter',   icon: '🧺', label: 'Surplus untuk Barter', sub: 'Tukar bumbu/sayur dengan tetangga sekitar' },
-              { val: 'jual_surplus', icon: '🏪', label: 'Jual Surplus / Acara NU', sub: 'Dijual segar atau pasok konsumsi kegiatan jam\'iyah' }
+              { val: 'olahan_rpp', icon: '🍯', label: 'Diolah di RPP ➔ Mamasar', sub: 'Diselamatkan jadi produk olahan tahan simpan untuk etalase Mamasar' }
             ]" :key="opt.val" :style="{
               display: 'flex', alignItems: 'center', gap: '10px',
               padding: '9px 12px', borderRadius: '10px',
@@ -993,33 +979,17 @@ const saveQuickConsume = () => {
             type="button" 
             class="btn btn-outline" 
             style="justify-content: flex-start; text-align: left;"
-            @click="setPlantPhase('🌱 Fase Semai / Kecambah', 20)"
+            @click="setPlantPhase('🌱 Fase Semai / Kecambah', 25)"
           >
-            🌱 1. Fase Semai / Berkecambah
+            🌱 1. Baru Ditanam / Fase Semai
           </button>
           <button 
             type="button" 
             class="btn btn-outline" 
             style="justify-content: flex-start; text-align: left;"
-            @click="setPlantPhase('🌿 Fase Vegetatif (Daun & Batang)', 40)"
+            @click="setPlantPhase('🌿 Tumbuh Baik / Vegetatif', 60)"
           >
-            🌿 2. Fase Vegetatif (Tumbuh Daun & Ranting)
-          </button>
-          <button 
-            type="button" 
-            class="btn btn-outline" 
-            style="justify-content: flex-start; text-align: left;"
-            @click="setPlantPhase('🌸 Sedang Berbunga', 65)"
-          >
-            🌸 3. Sedang Berbunga (Mulai Pembentukan Buah)
-          </button>
-          <button 
-            type="button" 
-            class="btn btn-outline" 
-            style="justify-content: flex-start; text-align: left;"
-            @click="setPlantPhase('🍅 Mulai Berbuah / Mengisi', 80)"
-          >
-            🍅 4. Mulai Berbuah / Rimpang Membesar
+            🌿 2. Tumbuh Baik / Vegetatif
           </button>
           <button 
             type="button" 
@@ -1027,7 +997,7 @@ const saveQuickConsume = () => {
             style="justify-content: flex-start; text-align: left;"
             @click="setPlantPhase('✂️ Siap Dipanen!', 100)"
           >
-            ✂️ 5. Siap Dipanen!
+            ✂️ 3. Siap Dipanen!
           </button>
         </div>
       </div>
