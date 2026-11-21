@@ -482,12 +482,13 @@ export const StorageService = {
       const raw = localStorage.getItem(KEYS.MEMBERS);
       const list: CommunityMemberItem[] = raw ? JSON.parse(raw) : [...SEED_MEMBERS];
 
-      // Deduplikasi anggota berdasarkan nomor WA atau nama unik
+      // Deduplikasi anggota berdasarkan nomor WA atau nama unik, abaikan Ahmad Fauzi
       const seenPhone = new Set<string>();
       const seenName = new Set<string>();
       const uniqueList: CommunityMemberItem[] = [];
 
       for (const m of list) {
+        if (m.name.toLowerCase().includes('ahmad fauzi') || m.id === 'MBR-153938') continue;
         const rawWa = (m.phone || '').replace(/\D/g, '').replace(/^62/, '0');
         const cleanName = (m.name || '').trim().toLowerCase().replace(/\s*\./g, '');
 
@@ -510,10 +511,12 @@ export const StorageService = {
   },
 
   saveMembers(members: CommunityMemberItem[]): void {
-    localStorage.setItem(KEYS.MEMBERS, JSON.stringify(members));
+    const cleaned = members.filter(m => !m.name.toLowerCase().includes('ahmad fauzi') && m.id !== 'MBR-153938');
+    localStorage.setItem(KEYS.MEMBERS, JSON.stringify(cleaned));
   },
 
   addMember(member: CommunityMemberItem): void {
+    if (member.name.toLowerCase().includes('ahmad fauzi') || member.id === 'MBR-153938') return;
     const list = this.getMembers();
     list.unshift(member);
     this.saveMembers(list);
@@ -524,17 +527,13 @@ export const StorageService = {
     try {
       const raw = localStorage.getItem(KEYS.COMMUNITY_POSTS);
       if (raw) {
-        const posts: CommunityPostItem[] = JSON.parse(raw);
-        let changed = false;
+        let posts: CommunityPostItem[] = JSON.parse(raw);
+        // Hapus post-init-1 dan postingan Ahmad Fauzi
+        const originalLen = posts.length;
+        posts = posts.filter(p => p.id !== 'post-init-1' && !p.authorName.toLowerCase().includes('ahmad fauzi'));
+        
+        let changed = posts.length !== originalLen;
         posts.forEach(p => {
-          if (p.id === 'post-init-1' && (p.authorName === 'Rasyiqi' || p.title.includes('Alhamdulillah') || (p.content && p.content.includes('Alhamdulillah')))) {
-            p.authorName = 'Ahmad Fauzi';
-            p.authorPhone = '085183131249';
-            p.title = 'Panen Cabai Rawit & Bayam Hijau';
-            p.content = 'Pagi ini petik cabai rawit merah dan seikat bayam segar dari polybag pekarangan samping. Uang belanja dapur hari ini berhasil hemat Rp 15.000!';
-            p.metricBadge = 'Panen 1.2 kg';
-            changed = true;
-          }
           if (p.id === 'post-init-2' && (p.content && (p.content.includes('Alhamdulillah') || p.content.includes('disedekahkan')))) {
             p.content = 'Produksi telur ayam kandang produktif hari ini melimpah. Sebagian untuk sarapan anak-anak, sisanya dibagikan ke tetangga sekitar.';
             p.metricBadge = '14 Butir Telur';
@@ -548,24 +547,8 @@ export const StorageService = {
         return posts;
       }
     } catch {}
-    // Seed kabar perdana yang ramah & otentik
+    // Seed kabar perdana yang ramah & otentik (tanpa post-init-1)
     const seedPosts: CommunityPostItem[] = [
-      {
-        id: 'post-init-1',
-        authorId: 'MBR-153938',
-        authorName: 'Ahmad Fauzi',
-        authorPhone: '085183131249',
-        yardName: 'Pekarangan Asri Gapura',
-        ranting: 'Gapura Timur',
-        mwcZone: 'MWC Gapura',
-        category: 'panen',
-        title: 'Panen Cabai Rawit & Bayam Hijau',
-        content: 'Pagi ini petik cabai rawit merah dan seikat bayam segar dari polybag pekarangan samping. Uang belanja dapur hari ini berhasil hemat Rp 15.000!',
-        metricBadge: 'Panen 1.2 kg',
-        reactions: { keren: 6, suka: 4, seger: 5, semangat: 2 },
-        userReaction: null,
-        createdAt: new Date(Date.now() - 3600000 * 3).toISOString()
-      },
       {
         id: 'post-init-2',
         authorId: 'MBR-20261016-9253',

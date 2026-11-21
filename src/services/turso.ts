@@ -432,7 +432,7 @@ export const TursoService = {
 
     try {
       const [membersRes, yardsRes, assetsRes, plantsRes, liveRes, harvestRes, kasRes] = await client.batch([
-        { sql: 'SELECT * FROM tbl_anggota ORDER BY created_at DESC', args: [] },
+        { sql: "SELECT * FROM tbl_anggota WHERE member_id != 'MBR-153938' AND nama_lengkap NOT LIKE '%Ahmad Fauzi%' ORDER BY created_at DESC", args: [] },
         { sql: 'SELECT * FROM tbl_pekarangan', args: [] },
         { sql: 'SELECT * FROM tbl_aset_produksi', args: [] },
         { sql: 'SELECT * FROM tbl_tanaman ORDER BY created_at DESC', args: [] },
@@ -866,6 +866,7 @@ export const TursoService = {
                 p.photo_url, p.metric_badge, p.reactions_data, p.is_mamasar_product, p.created_at,
                 (SELECT r.reaction_type FROM tbl_kabar_reactions r WHERE r.post_id = p.id AND r.user_phone = ?) as user_reaction
               FROM tbl_kabar_pekarangan p
+              WHERE p.id != 'post-init-1' AND p.author_name NOT LIKE '%Ahmad Fauzi%'
               ORDER BY p.created_at DESC
               LIMIT 50`,
         args: [userPhone || '']
