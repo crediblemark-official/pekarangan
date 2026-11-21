@@ -490,7 +490,7 @@ const clearAppCache = async () => {
 
     <!-- About App -->
     <div style="text-align: center; padding: 10px 0 16px 0; color: var(--text-dim); font-size: 0.68rem; line-height: 1.4;">
-      <strong>Pekarangan v2.0</strong> • Kedaulatan Pangan Mandiri
+      <strong>Pekarangan v2.1</strong> • Kedaulatan Pangan Mandiri
     </div>
   </div>
 </template>

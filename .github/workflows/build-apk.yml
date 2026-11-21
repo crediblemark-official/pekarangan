@@ -41,7 +41,11 @@ jobs:
       - name: Inject Environment Variables (from GitHub Secrets)
         run: |
           echo "VITE_GAS_URL=${{ secrets.VITE_GAS_URL }}" > .env.production
-          echo "VITE_GAS_URL=${{ secrets.VITE_GAS_URL }}" > .env.local
+          echo "VITE_TURSO_DATABASE_URL=${{ secrets.VITE_TURSO_DATABASE_URL }}" >> .env.production
+          echo "VITE_TURSO_AUTH_TOKEN=${{ secrets.VITE_TURSO_AUTH_TOKEN }}" >> .env.production
+          echo "VITE_MAMASAR_URL=${{ secrets.VITE_MAMASAR_URL }}" >> .env.production
+          cp .env.production .env.local
+          cp .env.production .env
 
       - name: Build Web Application
         run: npm run build
