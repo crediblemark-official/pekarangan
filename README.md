@@ -107,6 +107,27 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
+## 🌐 Progressive Web App (PWA) & Cloudflare Pages (Gratis)
+
+Aplikasi **Pekarangan** mendukung penuh format **PWA (Progressive Web App)** dengan kemampuan offline 100% menggunakan Service Worker (Workbox). Pengguna dapat langsung membuka tautan web di browser HP dan menekan tombol **"Pasang di Layar Utama (PWA)"** tanpa perlu instalasi APK manual.
+
+### Cara Deploy Gratis ke Cloudflare Pages:
+1. Buka [Cloudflare Dashboard](https://dash.cloudflare.com/) > **Compute (Workers & Pages)** > **Create application** > **Pages** > **Connect to Git**.
+2. Pilih repository: `crediblemark-official/pekarangan` (branch `main`).
+3. Konfigurasi Build Settings:
+   - **Framework preset:** `Vite`
+   - **Build command:** `npm run build`
+   - **Build output directory:** `dist`
+4. Masukkan **Environment Variables** (Production):
+   - `NODE_VERSION`: `22`
+   - `VITE_TURSO_DATABASE_URL`: `https://pekarangan-rasyiqi.aws-ap-southeast-1.turso.io`
+   - `VITE_TURSO_AUTH_TOKEN`: *(Auth token Turso Anda)*
+   - `VITE_MAMASAR_URL`: `https://mamasar.id`
+   - `VITE_GAS_URL`: *(URL Google Apps Script jika menggunakan fallback)*
+5. Klik **Save and Deploy**. Web app dan PWA langsung aktif di URL `https://<project-name>.pages.dev` dengan SSL gratis, CDN global berkecepatan tinggi, dan otomatis diperbarui setiap kali ada `git push`.
+
+---
+
 ## 🌐 Fallback Setup Backend Google Apps Script (Opsional)
 
 Jika ingin tetap menghubungkan Google Sheets sebagai backup:

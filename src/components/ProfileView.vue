@@ -7,11 +7,23 @@ import { SecurityService } from '../services/security';
 import type { AppSettings } from '../types';
 import { MWC_ZONES } from '../data/zones';
 import AppIcon from './AppIcon.vue';
+import { usePwaInstall } from '../composables/usePwaInstall';
 
 const emit = defineEmits<{
   (e: 'showToast', message: string, type?: 'success' | 'error' | 'warning'): void;
   (e: 'openQueue'): void;
 }>();
+
+const { isInstallable, promptInstall } = usePwaInstall();
+
+const handleInstallPwa = async () => {
+  const result = await promptInstall();
+  if (result === 'success') {
+    emit('showToast', 'Aplikasi berhasil dipasang di layar utama!', 'success');
+  } else if (result === 'dismissed') {
+    emit('showToast', 'Pemasangan dibatalkan', 'warning');
+  }
+};
 
 const settings = reactive<AppSettings>(StorageService.getSettings());
 
@@ -484,6 +496,22 @@ const clearAppCache = async () => {
           @click="clearAppCache"
         >
           🧹 Bersihkan
+        </button>
+      </div>
+
+      <!-- 4. PWA Install Option (muncul jika browser mendukung instalasi PWA) -->
+      <div v-if="isInstallable" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; margin-top: 6px; background-color: #ecfdf5; border: 1px dashed #10b981; border-radius: 6px;">
+        <div>
+          <div style="font-weight: 700; font-size: 0.82rem; color: #065f46;">Pasang di Layar Utama (PWA)</div>
+          <div style="font-size: 0.68rem; color: #047857;">Akses offline cepat langsung seperti aplikasi native</div>
+        </div>
+        <button 
+          type="button" 
+          class="btn-sm btn-primary" 
+          style="padding: 5px 12px; font-size: 0.75rem;"
+          @click="handleInstallPwa"
+        >
+          📥 Pasang
         </button>
       </div>
     </div>
