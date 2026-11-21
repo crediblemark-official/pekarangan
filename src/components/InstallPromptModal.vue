@@ -12,6 +12,7 @@ const { isInstalled, promptInstall } = usePwaInstall();
 
 const isIos = ref(false);
 const isInAppBrowser = ref(false);
+const isDesktop = ref(false);
 const showManualGuide = ref(false);
 const installState = ref<'idle' | 'installing' | 'success' | 'manual'>('idle');
 
@@ -19,6 +20,7 @@ onMounted(() => {
   const ua = navigator.userAgent || '';
   isIos.value = /iphone|ipad|ipod/i.test(ua) && !(window as any).MSStream;
   isInAppBrowser.value = /FBAN|FBAV|Instagram|WhatsApp|Line|Telegram|MicroMessenger/i.test(ua);
+  isDesktop.value = !/android|iphone|ipad|ipod|mobile/i.test(ua);
 
   if (isIos.value || isInAppBrowser.value) {
     showManualGuide.value = true;
@@ -67,15 +69,16 @@ const handleInstallClick = async () => {
         ✕
       </button>
 
-      <!-- 1. SUCCESS STATE: Aplikasi Sudah Terpasang -->
+      <!-- 1. SUCCESS / ALREADY INSTALLED STATE -->
       <div v-if="installState === 'success' || isInstalled" class="pwa-content-flow">
         <div class="pwa-success-badge">
           <AppIcon name="check" size="lg" color="#15803d" />
         </div>
         <div class="pwa-text-group">
-          <h3 class="pwa-dialog-title">Aplikasi Berhasil Dipasang!</h3>
+          <h3 class="pwa-dialog-title">Aplikasi Sudah Terpasang!</h3>
           <p class="pwa-dialog-desc">
-            Ikon <strong>Pekarangan</strong> kini sudah aktif di layar utama HP Anda. Buka melalui ikon tersebut untuk pengalaman offline-first penuh.
+            Pekarangan sudah terpasang di {{ isDesktop ? 'komputer/laptop' : 'HP' }} Anda. 
+            {{ isDesktop ? 'Anda dapat membukanya melalui daftar aplikasi atau ikon di bilah alamat browser.' : 'Buka melalui ikon di layar utama untuk pengalaman offline penuh.' }}
           </p>
         </div>
         <button
@@ -83,7 +86,7 @@ const handleInstallClick = async () => {
           @click="emit('close')"
           class="btn-pwa-primary"
         >
-          Buka Pekarangan
+          Masuk ke Aplikasi
         </button>
       </div>
 
@@ -95,14 +98,14 @@ const handleInstallClick = async () => {
         <div class="pwa-text-group">
           <h3 class="pwa-dialog-title">Buka di Browser Utama</h3>
           <p class="pwa-dialog-desc">
-            Aplikasi obrolan membatasi fitur pemasangan PWA langsung. Untuk memasang ke layar HP:
+            Aplikasi obrolan membatasi fitur pemasangan PWA langsung. Untuk memasang:
           </p>
         </div>
         <div class="pwa-guide-box">
           <p class="pwa-guide-label">Langkah mudah:</p>
           <ol class="pwa-guide-list">
             <li>Ketuk menu <strong>titik tiga (⋮)</strong> di pojok browser ini.</li>
-            <li>Pilih <strong>"Buka di Browser"</strong> (Chrome / Safari).</li>
+            <li>Pilih <strong>"Buka di Browser"</strong> (Chrome / Safari / Edge).</li>
             <li>Setelah terbuka di browser utama, pasang langsung dari sana.</li>
           </ol>
         </div>
@@ -157,21 +160,37 @@ const handleInstallClick = async () => {
         <div class="pwa-text-group">
           <h3 class="pwa-dialog-title">Pasang Aplikasi Pekarangan</h3>
           <p class="pwa-dialog-desc">
-            Browser Anda mengunci dialog otomatis. Pasang manual dalam 2 detik:
+            {{ isDesktop ? 'Gunakan tombol pasang resmi di browser desktop Anda:' : 'Browser Anda mengunci dialog otomatis. Pasang manual dalam 2 detik:' }}
           </p>
         </div>
-        <div class="pwa-guide-steps">
+
+        <!-- Desktop Guide -->
+        <div v-if="isDesktop" class="pwa-guide-steps">
           <div class="pwa-step-item">
             <span class="pwa-step-num">1</span>
-            <p>Ketuk menu <strong>titik tiga (⋮)</strong> atau ikon install (💻⬇️) di bilah atas browser.</p>
+            <p>Klik ikon <strong>Pasang (💻⬇️)</strong> di sebelah kanan bilah alamat (address bar) Chrome/Edge.</p>
+          </div>
+          <div class="pwa-step-item">
+            <span class="pwa-step-num">2</span>
+            <p>Atau klik menu <strong>titik tiga (⋮)</strong> browser &gt; <strong>Simpan &amp; bagikan</strong> &gt; <strong>Instal Pekarangan</strong>.</p>
+          </div>
+        </div>
+
+        <!-- Mobile Guide -->
+        <div v-else class="pwa-guide-steps">
+          <div class="pwa-step-item">
+            <span class="pwa-step-num">1</span>
+            <p>Ketuk menu <strong>titik tiga (⋮)</strong> di pojok kanan atas browser Chrome.</p>
           </div>
           <div class="pwa-step-item">
             <span class="pwa-step-num">2</span>
             <p>Pilih menu <strong>"Instal aplikasi"</strong> atau <strong>"Tambahkan ke Layar utama"</strong>.</p>
           </div>
         </div>
+
         <div class="pwa-action-stack">
           <a
+            v-if="!isDesktop"
             href="https://github.com/crediblemark-official/pekarangan/releases/tag/v2.1.0"
             target="_blank"
             rel="noopener noreferrer"
@@ -185,7 +204,7 @@ const handleInstallClick = async () => {
             @click="emit('close')"
             class="btn-pwa-ghost"
           >
-            Lanjut Menggunakan Versi Web
+            Lanjut Menggunakan di Browser
           </button>
         </div>
       </div>
@@ -197,22 +216,22 @@ const handleInstallClick = async () => {
         <div class="pwa-text-group">
           <h3 class="pwa-dialog-title">Pasang Aplikasi Pekarangan</h3>
           <p class="pwa-dialog-desc">
-            Pasang langsung ke layar utama HP Anda. Berjalan 100% offline tanpa kuota internet &amp; bebas iklan.
+            {{ isDesktop ? 'Pasang sebagai aplikasi desktop mandiri di komputer/laptop Anda.' : 'Pasang langsung ke layar utama HP Anda. Berjalan 100% offline tanpa kuota internet & bebas iklan.' }}
           </p>
         </div>
 
         <div class="pwa-benefits-box">
           <div class="pwa-benefit-item">
             <AppIcon name="check" size="xs" color="#15803d" />
-            <span>100% Offline (catat panen tanpa sinyal)</span>
+            <span>100% Offline (akses tanpa koneksi internet)</span>
           </div>
           <div class="pwa-benefit-item">
             <AppIcon name="check" size="xs" color="#15803d" />
-            <span>Sangat ringan (~2MB), tanpa Play Store</span>
+            <span>Sangat ringan (~2MB) &amp; cepat</span>
           </div>
           <div class="pwa-benefit-item">
             <AppIcon name="check" size="xs" color="#15803d" />
-            <span>Gratis selamanya, privasi aman di HP</span>
+            <span>Aplikasi resmi mandiri pangan keluarga</span>
           </div>
         </div>
 
@@ -224,7 +243,7 @@ const handleInstallClick = async () => {
             class="btn-pwa-primary"
           >
             <AppIcon name="download" size="sm" color="#ffffff" />
-            <span>{{ installState === 'installing' ? 'Menyiapkan...' : 'Pasang Sekarang ke HP' }}</span>
+            <span>{{ installState === 'installing' ? 'Menyiapkan...' : (isDesktop ? 'Pasang ke Komputer (PC)' : 'Pasang Sekarang ke HP') }}</span>
           </button>
 
           <button

@@ -6,15 +6,13 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 // Module-level Singleton State
-// Disimpan di luar fungsi agar event `beforeinstallprompt` langsung ditangkap
-// saat file di-import oleh browser, sebelum komponen apapun sempat me-mount.
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 const isInstallable = ref(false);
 const isInstalled = ref(false);
 const installError = ref<string | null>(null);
 
 if (typeof window !== 'undefined') {
-  // Cek apakah sudah berjalan dalam mode standalone (terpasang sebagai PWA)
+  // 1. Cek apakah berjalan dalam mode standalone (sudah dibuka di window PWA)
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     (window.navigator as any).standalone === true ||
@@ -24,12 +22,22 @@ if (typeof window !== 'undefined') {
     isInstalled.value = true;
   }
 
-  // Cek dukungan Web Install API modern
+  // 2. Cek getInstalledRelatedApps untuk mendeteksi apakah PWA sudah terinstal di PC/Desktop
+  if (typeof navigator !== 'undefined' && 'getInstalledRelatedApps' in navigator) {
+    (navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
+      if (apps && apps.length > 0) {
+        isInstalled.value = true;
+        console.log('[PWA] Aplikasi terdeteksi sudah terpasang di perangkat:', apps);
+      }
+    }).catch(() => {});
+  }
+
+  // 3. Cek dukungan Web Install API modern
   if (typeof (Navigator.prototype as any).install === 'function') {
     isInstallable.value = true;
   }
 
-  // Tangkap event sebelum komponen me-mount agar tidak terlewat
+  // 4. Tangkap event beforeinstallprompt seketika saat bundle di-import
   window.addEventListener('beforeinstallprompt', (e: Event) => {
     e.preventDefault();
     deferredPrompt = e as BeforeInstallPromptEvent;
@@ -49,6 +57,23 @@ export function usePwaInstall() {
   const promptInstall = async (): Promise<'success' | 'dismissed' | 'unsupported'> => {
     installError.value = null;
 
+    // Tunggu sebentar jika event beforeinstallprompt masih dalam proses validasi ServiceWorker oleh Chrome (terutama di PC)
+    if (!deferredPrompt && typeof window !== 'undefined') {
+      await new Promise<void>((resolve) => {
+        let timer: any;
+        const onPrompt = () => {
+          clearTimeout(timer);
+          window.removeEventListener('beforeinstallprompt', onPrompt);
+          resolve();
+        };
+        window.addEventListener('beforeinstallprompt', onPrompt, { once: true });
+        timer = setTimeout(() => {
+          window.removeEventListener('beforeinstallprompt', onPrompt);
+          resolve();
+        }, 800);
+      });
+    }
+
     // 1. Dukungan Web Install API modern (Chrome 129+)
     const supportsWebInstall = typeof (Navigator.prototype as any).install === 'function';
     if (supportsWebInstall) {
@@ -63,7 +88,7 @@ export function usePwaInstall() {
       }
     }
 
-    // 2. Dukungan deferred BeforeInstallPromptEvent
+    // 2. Dukungan deferred BeforeInstallPromptEvent (Chrome PC & Android)
     if (deferredPrompt) {
       try {
         const promptEvent = deferredPrompt;
@@ -84,7 +109,7 @@ export function usePwaInstall() {
       }
     }
 
-    // 3. Browser tidak menyediakan prompt otomatis (misal Safari, Firefox, WebView, atau cooldown)
+    // 3. Browser tidak menyediakan prompt otomatis (misal Safari, Firefox, atau sudah terinstal di PC)
     return 'unsupported';
   };
 

@@ -27,9 +27,15 @@ export default defineConfig({
         theme_color: '#15803d',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait-primary',
+        orientation: 'any',
         start_url: '/',
         scope: '/',
+        related_applications: [
+          {
+            platform: 'webapp',
+            url: 'https://pekarangan.pages.dev/manifest.webmanifest'
+          }
+        ],
         categories: ['productivity', 'lifestyle', 'utilities'],
         icons: [
           {
